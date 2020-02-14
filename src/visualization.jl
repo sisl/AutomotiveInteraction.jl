@@ -129,7 +129,7 @@ function scenelist2video(scene_list;id_list=[],
     for i in 1:length(scene_list)
         if !isempty(id_list) keep_vehicle_subset!(scene_list[i],id_list) end
         scene_visual = render(scene_list[i],roadway,
-        [IDOverlay(colorant"white",12)],
+        #[IDOverlay(colorant"white",12)],
         cam=FitToContentCamera(0.),
         #cam = SceneFollowCamera(10.)
         )
