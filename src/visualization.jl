@@ -28,7 +28,7 @@ video_trajdata_replay(range=1:100,roadway=roadway,traj=traj_interaction,filename
 ```
 """
 function video_trajdata_replay(id_list = [];range=nothing,traj=traj_interaction,
-	roadway=roadway_interaction, filename="media/interaction_vids/$(range).mp4")
+	roadway=roadway_interaction, filename="../media/$(range).mp4")
 
     frames = Frames(MIME("image/png"), fps=10)
     scene = Scene(500)

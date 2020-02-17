@@ -9,8 +9,6 @@ function append_to_curve!(target::Curve, newstuff::Curve)
     return target
 end
 
-
-
 """
     function get_new_angle
 - Does the actual angle calculation based on the x y coordinates
@@ -82,7 +80,6 @@ function append_headings(coordinates::Matrix{Float64})
 end
 
 
-
 """
     function centerlines_txt2tracks(filename)
 
@@ -120,4 +117,43 @@ function centerlines_txt2tracks(filename)
     end
 
     return track
+end
+
+# function: read in the centerline text files and make `roadway_interaction`
+"""
+    function make_roadway_interaction()
+
+- Make the `DR_CHN_Merging` roadway by reading in the centerlines in `AutomotiveInteraction.jl/dataset`
+
+# Example
+```julia
+roadway_interaction = make_roadway_interaction()
+```
+"""
+function make_roadway_interaction()
+    track0 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_0.txt")
+    track1 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_1.txt")
+    track2 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_2.txt")
+    track3 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_3.txt")
+    track4 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_4.txt")
+    track5 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_5.txt")
+    track6 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_6.txt")
+    
+    roadway_interaction = Roadway()
+    lane0 = Lane(LaneTag(1,1),track0)
+    lane1 = Lane(LaneTag(2,1),track1)
+    lane2 = Lane(LaneTag(3,1),track2)
+    lane3 = Lane(LaneTag(4,1),track3)
+    lane4 = Lane(LaneTag(5,1),track4)
+    lane5 = Lane(LaneTag(6,1),track5)
+    lane6 = Lane(LaneTag(7,1),track6)
+    push!(roadway_interaction.segments, RoadSegment(1, [lane0]))
+    push!(roadway_interaction.segments, RoadSegment(2, [lane1]))
+    push!(roadway_interaction.segments, RoadSegment(3, [lane2]))
+    push!(roadway_interaction.segments, RoadSegment(4, [lane3]))
+    push!(roadway_interaction.segments, RoadSegment(5, [lane4]))
+    push!(roadway_interaction.segments, RoadSegment(6, [lane5]))
+    push!(roadway_interaction.segments, RoadSegment(7, [lane6]))
+    
+    return roadway_interaction
 end
