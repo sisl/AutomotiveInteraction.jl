@@ -6,7 +6,9 @@ Get a specific scene from trajdata
 
 # Example:
 ```julia
-scene = get_scene(1,int_trajdata)
+scene = Scene(500)
+scene = get_scene(1,traj_interaction)
+render(scene,roadway_interaction)
 ```
 """
 function get_scene(framenum::Int64,traj=traj_interaction)
@@ -131,7 +133,7 @@ function scenelist2video(scene_list;id_list=[],filename = "media/scenelist_to_vi
     for i in 1:length(scene_list)
         if !isempty(id_list) keep_vehicle_subset!(scene_list[i],id_list) end
         scene_visual = render(scene_list[i],roadway,
-        #[IDOverlay(colorant"white",12)],
+        [IDOverlay()],
         cam=FitToContentCamera(0.),
         #cam = SceneFollowCamera(10.)
         )
