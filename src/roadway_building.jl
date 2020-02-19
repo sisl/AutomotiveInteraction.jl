@@ -119,73 +119,94 @@ end
 # function: read in the centerline text files and make `roadway_interaction`
 """
     function make_roadway_interaction()
-
+# Overview
 - Make the `DR_CHN_Merging` roadway by reading in the centerlines in `AutomotiveInteraction.jl/dataset`
 - These centerlines have been modified from the original ones in the `centerlines_DR_CHN_Merging_ZS` folder
 - The long lane being merged into by on ramp was split into before and after merge point in 2 separate txt files
-- Eg: `output_centerline_1.txt` was split into `centerlines_b.txt` (before merge point) and `centerlines_c.txt` (after).
+- Eg: `output_centerline_1.txt` was split into `centerlines_b1.txt` (before merge point) and `centerlines_b2.txt` (after).
 - Similarly, `output_centerline_5.txt` was split into `cetnerlines_g.txt` (before) and `centerlines_h.txt` (after)
-- Finally, the `output_centerline_<>.txt` had x coords in row 1 and y coords in row 2.
-- The `centerlines_<>.txt` have x in col 1 and y in col 2
+- Finally, the files in `centerlines_DR_CHN_Merging_ZS` folder `output_centerline_<>.txt` had x coords in row 1 and y coords in row 2.
+- The current `centerlines_<>.txt` have x in col 1 and y in col 2
 
-# Example
+# Details
+- Reads in the centerline information from `AutomotiveInteraction.jl/dataset`
+- Segment 1: Has 2 lanes: On ramp `a` is lane 1 and `b1` is lane 2
+- Segment 2: Has 1 lane: `b1` is lane 1. Both `a` and `b1` connect into `b2`
+- Segment 3: Has 2 lanes: `c` is lane 1 and `d` is lane 2
+- Segment 4: Has 3 lanes: `g` is lane 1, `f1` is lane 2, `e1` is lane 3.
+- Segment 5: Has 2 lanes: `f2` is lane 1, `e2` is lane 2. `e1` connects to `e2` and both `g` and `f1` to `e2`
+    - Note that convention used here is that right most lane in direction of travel is given lane id 1
+
+# Examples
 ```julia
 roadway_interaction = make_roadway_interaction()
 ```
 """
 function make_roadway_interaction()
-    roadway_interaction = Roadway()
-
-        # Form segment 2 of the road
-    track_b = centerlines_txt2tracks("../dataset/centerlines_b.txt")
-    track_c = centerlines_txt2tracks("../dataset/centerlines_c.txt")
-    merge_index_a_into_bc = curveindex_end(track_b)
-    append_to_curve!(track_b,track_c) # b and c together become lane 1
-    lane_bc = Lane(LaneTag(2,1),track_b,width=3.)
-    seg_bc = RoadSegment(2,[lane_bc])
-
-    push!(roadway_interaction.segments,seg_bc)
-
-        # Form segment 1 of the road
+    road = Roadway()
+        # Make segment 1: the on ramp a and first part of lane: b1
     track_a = centerlines_txt2tracks("../dataset/centerlines_a.txt"); # Top most on ramp
-    lane_a = Lane(LaneTag(1,1),track_a,width=3.,next=RoadIndex(merge_index_a_into_bc,LaneTag(2,1)))
-    seg_a = RoadSegment(1,[lane_a])
+    lane_a = Lane(LaneTag(1,1),track_a)
 
-    push!(roadway_interaction.segments,seg_a)
+    track_b1 = centerlines_txt2tracks("../dataset/centerlines_b1.txt")
+    lane_b1 = Lane(LaneTag(1,2),track_b1)
+        
+        # Make segment 2: second part of lane: b2. And connect both lanes of segment 1 into segment 2
+    track_b2 = centerlines_txt2tracks("../dataset/centerlines_b2.txt")
+    lane_b2 = Lane(LaneTag(2,1),track_b2)
+    connect!(lane_a,lane_b2)
+    connect!(lane_b1,lane_b2)
 
-        # Form segment 3 of the road
+    push!(road.segments,RoadSegment(1,[lane_a,lane_b1]))
+    push!(road.segments,RoadSegment(2,[lane_b2]))
+
+        # Make segment 3: c and d
+    track_c = centerlines_txt2tracks("../dataset/centerlines_c.txt")
+    lane_c = Lane(LaneTag(3,1),track_c)
+
     track_d = centerlines_txt2tracks("../dataset/centerlines_d.txt")
-    lane_d = Lane(LaneTag(3,1),track_d,width=4.)
-    seg_d = RoadSegment(3,[lane_d])
-    push!(roadway_interaction.segments,seg_d)
+    lane_d = Lane(LaneTag(3,2),track_d)
 
-        # Form segment 4
-    track_e = centerlines_txt2tracks("../dataset/centerlines_e.txt")
-    lane_e = Lane(LaneTag(4,1),track_e,width=4.)
-    seg_e = RoadSegment(4,[lane_e])
-    push!(roadway_interaction.segments,seg_e)
+    push!(road.segments,RoadSegment(3,[lane_c,lane_d]))
 
-# Now going in other direction i.e. bottom left to top right direction of travel
-        # Form segment 4
-    track_f = centerlines_txt2tracks("../dataset/centerlines_f.txt")
-    lane_f = Lane(LaneTag(5,1),track_f)
-    seg_f = RoadSegment(5,[lane_f])
-    push!(roadway_interaction.segments,seg_f)
-
-        # Continue on segment 4
+            # Other side of the divider
+        # Make segment 4: g,f1,e1 
     track_g = centerlines_txt2tracks("../dataset/centerlines_g.txt")
-    track_h = centerlines_txt2tracks("../dataset/centerlines_h.txt")
-    merge_index_i_into_gh = curveindex_end(track_g)
-    append_to_curve!(track_g,track_h)
-    lane_gh = Lane(LaneTag(6,1),track_g,width=4.)
-    seg_gh = RoadSegment(6,[lane_gh])
-    push!(roadway_interaction.segments,seg_gh)
+    lane_g = Lane(LaneTag(4,1),track_g)
 
-        # Form segment 6, the on ramp
-    track_i = centerlines_txt2tracks("../dataset/centerlines_i.txt")
-    lane_i = Lane(LaneTag(7,1),track_i,width=4.,next=RoadIndex(merge_index_i_into_gh,LaneTag(6,1)));
-    seg_i = RoadSegment(7,[lane_i])
-    push!(roadway_interaction.segments,seg_i)
+    track_f1 = centerlines_txt2tracks("../dataset/centerlines_f1.txt")
+    lane_f1 = Lane(LaneTag(4,2),track_f1)
 
-    return roadway_interaction
+    track_e1 = centerlines_txt2tracks("../dataset/centerlines_e1.txt")
+    lane_e1 = Lane(LaneTag(4,3),track_e1)
+
+        # Make segment 5: f2,e2. And connect 3 lanes of segment 4 into segment 5 two lanes
+    track_f2 = centerlines_txt2tracks("../dataset/centerlines_f2.txt")
+    lane_f2 = Lane(LaneTag(5,1),track_f2)
+
+    track_e2 = centerlines_txt2tracks("../dataset/centerlines_e2.txt")
+    lane_e2 = Lane(LaneTag(5,2),track_e2)
+    connect!(lane_e1,lane_e2)
+    connect!(lane_f1,lane_f2)
+    connect!(lane_g,lane_f2)
+
+    push!(road.segments,RoadSegment(4,[lane_g,lane_f1,lane_e1]))
+    push!(road.segments,RoadSegment(5,[lane_f2,lane_e2]))
+
+    return road
+end
+
+"""
+    function make_roadway_ngsim()
+
+- Read in the ngsim 101 roadway from the provided roadway file `../dataset/ngsim_101.txt`
+
+# Examples
+```julia
+roadway_ngsim = make_roadway_ngsim()
+```
+"""
+function make_roadway_ngsim()
+    roadway_ngsim = open(io->read(io, MIME"text/plain"(), Roadway),"../dataset/ngsim_101.txt", "r")
+    return roadway_ngsim
 end

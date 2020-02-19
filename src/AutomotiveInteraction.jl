@@ -21,7 +21,8 @@ export append_to_curve!,
     bound_heading,
     append_headings,
     centerlines_txt2tracks,
-    make_roadway_interaction
+    make_roadway_interaction,
+    make_roadway_ngsim
 include("roadway_building.jl")
 
 
