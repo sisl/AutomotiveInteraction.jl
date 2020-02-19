@@ -123,8 +123,8 @@ end
 - Make the `DR_CHN_Merging` roadway by reading in the centerlines in `AutomotiveInteraction.jl/dataset`
 - These centerlines have been modified from the original ones in the `centerlines_DR_CHN_Merging_ZS` folder
 - The long lane being merged into by on ramp was split into before and after merge point in 2 separate txt files
-- Eg: `output_centerline_1.txt` was split into `centerlines_b1.txt` (before merge point) and `centerlines_b2.txt` (after).
-- Similarly, `output_centerline_5.txt` was split into `cetnerlines_g.txt` (before) and `centerlines_h.txt` (after)
+- Eg: `output_centerline_1.txt` has been split into `centerlines_b1.txt` (before merge point) and `centerlines_b2.txt` (after).
+- Similarly, `output_centerline_5.txt` has been split into `cetnerlines_g.txt` (before) and `centerlines_h.txt` (after)
 - Finally, the files in `centerlines_DR_CHN_Merging_ZS` folder `output_centerline_<>.txt` had x coords in row 1 and y coords in row 2.
 - The current `centerlines_<>.txt` have x in col 1 and y in col 2
 

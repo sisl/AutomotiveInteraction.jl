@@ -21,6 +21,72 @@ function keep_vehicle_subset!(scene::Scene, ids)
     return scene
 end
 
+# function: place 3 vehicles on a straight road: Enables quick testing of ideas
+"""
+    function place_vehs_on_straight_road()
+- Generate a stright roadway and place 3 vehicles on it
+- Roadway is generated using `gen_straight_roadway` so returns a road with 1 segment and all lanes in that segment
+
+# Examples
+```julia
+scene,road_straight = place_vehs_on_straight_road()
+```
+"""
+function place_vehs_on_straight_road()
+    road_straight = gen_straight_roadway(4,400.)
+
+    scene = Scene()
+
+    veh1 = Vehicle(VehicleState(VecSE2(10.,0.,0.),road_straight,20.),VehicleDef(),1)
+    push!(scene,veh1)
+
+    veh2 = Vehicle(VehicleState(VecSE2(30.,0.,0.),road_straight,10.),VehicleDef(),2)
+    push!(scene,veh2)
+
+    veh3 = Vehicle(VehicleState(VecSE2(30.,5.,0.),road_straight,20.),VehicleDef(),3)
+    push!(scene,veh3)
+
+    return scene,road_straight
+end
+
+"""
+    function place_vehs_on_separated_segments_road()
+- Create two straight segments, turn them into lanes, and then a roadway with two separate segments
+- Such a scenario was used to test whether lane changes can happen across segments. Answer is no
+
+# Examples
+```julia
+scene,road_test = place_vehs_on_separated_segments_road()
+```
+"""
+function place_vehs_on_separated_segments_road()
+    test_road = Roadway()
+    start1 = VecE2(0.,0.)
+    end1 = VecE2(400.,0.)
+    track1 = gen_straight_curve(start1,end1,2)
+    lane1 = Lane(LaneTag(1,1),track1)
+    push!(test_road.segments,RoadSegment(1,[lane1]))
+
+    start2 = VecE2(0.,5.)
+    end2 = VecE2(400.,5.)
+    track2 = gen_straight_curve(start2,end2,2)
+    lane2 = Lane(LaneTag(2,1),track2)
+    push!(test_road.segments,RoadSegment(2,[lane2]))
+
+    scene = Scene()
+
+    veh1 = Vehicle(VehicleState(VecSE2(10.,0.,0.),test_road,20.),VehicleDef(),1)
+    push!(scene,veh1)
+
+    veh2 = Vehicle(VehicleState(VecSE2(30.,0.,0.),test_road,10.),VehicleDef(),2)
+    push!(scene,veh2)
+
+    veh3 = Vehicle(VehicleState(VecSE2(30.,5.,0.),test_road,20.),VehicleDef(),3)
+    push!(scene,veh3)
+
+    return scene,test_road
+end
+
 # functions: default param driver model, and timlanechanger driver model to all vehicles in scene
 """
     function make_def_models(scene)
