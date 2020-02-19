@@ -1,11 +1,33 @@
-# function: make default parameter driver model given a starting scene of vehicles
+# function: keep subset of vehicles in the scene
+"""
+    function keep_vehicle_subset!(scene::Scene, ids::Vector{Int})
+- Just keep a set of vehicles in scene as specified by `ids` (a list of vehicle ids)
+- Obtained from `ngsim_env/julia/src/ngsim_utils.jl`
+
+# Example
+```julia
+scene = get_scene(1, traj_interaction)
+veh_id_list = [7,10,11,18,22,25,29]
+keep_vehicle_subset!(scene,veh_id_list)
+```
+"""
+function keep_vehicle_subset!(scene::Scene, ids)
+    keep_ids = Set(ids)
+    scene_ids = Set([veh.id for veh in scene])
+    remove_ids = setdiff(scene_ids, keep_ids)
+    for id in remove_ids
+        delete!(scene, id)
+    end
+    return scene
+end
+
+# functions: default param driver model, and timlanechanger driver model to all vehicles in scene
 """
     function make_def_models(scene)
 - Takes an input `scene` and associates a default param `Tim2DDriver` to all the vehicles in the scene
 
 # Examples
 ```julia
-scene = Scene(500)
 scene = get_scene(1,traj_interaction)
 models = make_def_models(scene)
 ```
@@ -18,6 +40,25 @@ function make_def_models(scene)
     end
     return models
 end
+
+"""
+	function make_TimLaneChanger_models(scene)
+
+- Takes input `scene` and associates default param Tim2DDriver model to all vehs, with lane changer being `TimLaneChanger`
+# Examples
+```julia
+scene = get_scene(traj_interaction)
+models = make_TimLaneChanger_models(scene)
+```
+"""
+function make_TimLaneChanger_models(scene)
+    models = Dict{Int64,DriverModel}()
+    for veh in scene
+        models[veh.id] = Tim2DDriver(INTERACTION_TIMESTEP,mlane=TimLaneChanger(INTERACTION_TIMESTEP))
+    end
+    return models
+end
+
 
 # function: get hallucination scenes
 """
@@ -58,27 +99,27 @@ function get_hallucination_scenes(scene_halluc;models,start_step=1,duration=5,id
     return halluc_scenes_list
 end
 
-# function: Select a vehicle from starting scene and run it for a duration to get a video
+# function: Select vehicles from a real scene and run them for a duration to get a video
 """
-    function run_a_vehicle
-- Select vehicle with id `veh_id` from frame number `start_frame` of track information in `traj`
+    function run_vehicles
+- Select vehicles with ids in `id_list` from frame number `start_frame` of track information in `traj`
 - Assign default 2D driver model to the vehicle and run it for `duration` seconds on `roadway`
 - Writes a video to location specified by `filename`
 
 # Examples
 ```julia
-run_a_vehicle(veh_id=29,duration=10.,roadway=roadway_test,filename="media/veh_test.mp4")
+run_vehicles(id_list=[7,10,11,18,22,25,29],roadway=roadway_interaction,filename="media/run_veh.mp4")
 ```
 """
-function run_a_vehicle(;veh_id,start_frame = 1,duration=5.,filename="media/vehid_$(veh_id).mp4",
-    traj = traj_interaction, roadway = roadway_interaction)
+function run_vehicles(;id_list,start_frame=1,duration=10.,filename="media/run_vehs.mp4",
+    traj = traj_interaction, roadway= roadway_interaction)
+
     scene_real = get_scene(start_frame,traj)
-    veh = scene_real[findfirst(veh_id,scene_real)]
-    
-    scene = Scene(500)
-    push!(scene,veh)
-    models = make_def_models(scene)
-    scene_list = get_hallucination_scenes(scene,models=models,duration=duration,roadway=roadway)
+    keep_vehicle_subset!(scene_real,id_list)
+
+    models = make_def_models(scene_real)
+
+    scene_list = get_hallucination_scenes(scene_real,models=models,id_list=id_list,duration=duration,roadway=roadway)
     scenelist2video(scene_list,filename=filename,roadway=roadway)
     return nothing
 end

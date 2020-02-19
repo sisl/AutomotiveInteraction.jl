@@ -80,23 +80,19 @@ function append_headings(coordinates::Matrix{Float64})
 end
 
 
+# function: centerlines_txt2tracks_new
 """
     function centerlines_txt2tracks(filename)
+- Reads a .txt file which contains x coords in col 1 and y coords in col2
+- Returns a track, i.e. a `curve` from AutomotiveDrivingModels
 
-- Input: text file with centerline coordinates with x in row 1 and y in row2
-- Output: Track that cen be used to create a lane
-
-- Requires: `using DelimitedFiles`
-# Example
+# Examples
 ```julia
-track0 = centerlines_txt2tracks("centerlines_DR_CHN_Merging_ZS/output_centerline_0.txt")
+# See make_roadway_interaction()
 ```
 """
 function centerlines_txt2tracks(filename)
-    centerlines = readdlm(filename,',')
-    x0 = centerlines[1,:]
-    y0 = centerlines[2,:]
-    coods = hcat(x0,y0)
+    coods = readdlm(filename,',')
     coods_app = append_headings(coods) # Append with the angle
     
     mid_coods = coods_app'
@@ -119,11 +115,18 @@ function centerlines_txt2tracks(filename)
     return track
 end
 
+
 # function: read in the centerline text files and make `roadway_interaction`
 """
     function make_roadway_interaction()
 
 - Make the `DR_CHN_Merging` roadway by reading in the centerlines in `AutomotiveInteraction.jl/dataset`
+- These centerlines have been modified from the original ones in the `centerlines_DR_CHN_Merging_ZS` folder
+- The long lane being merged into by on ramp was split into before and after merge point in 2 separate txt files
+- Eg: `output_centerline_1.txt` was split into `centerlines_b.txt` (before merge point) and `centerlines_c.txt` (after).
+- Similarly, `output_centerline_5.txt` was split into `cetnerlines_g.txt` (before) and `centerlines_h.txt` (after)
+- Finally, the `output_centerline_<>.txt` had x coords in row 1 and y coords in row 2.
+- The `centerlines_<>.txt` have x in col 1 and y in col 2
 
 # Example
 ```julia
@@ -131,29 +134,58 @@ roadway_interaction = make_roadway_interaction()
 ```
 """
 function make_roadway_interaction()
-    track0 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_0.txt")
-    track1 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_1.txt")
-    track2 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_2.txt")
-    track3 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_3.txt")
-    track4 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_4.txt")
-    track5 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_5.txt")
-    track6 = centerlines_txt2tracks("../dataset/centerlines_DR_CHN_Merging_ZS/output_centerline_6.txt")
-    
     roadway_interaction = Roadway()
-    lane0 = Lane(LaneTag(1,1),track0)
-    lane1 = Lane(LaneTag(2,1),track1)
-    lane2 = Lane(LaneTag(3,1),track2)
-    lane3 = Lane(LaneTag(4,1),track3)
-    lane4 = Lane(LaneTag(5,1),track4)
-    lane5 = Lane(LaneTag(6,1),track5)
-    lane6 = Lane(LaneTag(7,1),track6)
-    push!(roadway_interaction.segments, RoadSegment(1, [lane0]))
-    push!(roadway_interaction.segments, RoadSegment(2, [lane1]))
-    push!(roadway_interaction.segments, RoadSegment(3, [lane2]))
-    push!(roadway_interaction.segments, RoadSegment(4, [lane3]))
-    push!(roadway_interaction.segments, RoadSegment(5, [lane4]))
-    push!(roadway_interaction.segments, RoadSegment(6, [lane5]))
-    push!(roadway_interaction.segments, RoadSegment(7, [lane6]))
-    
+
+        # Form segment 2 of the road
+    track_b = centerlines_txt2tracks("../dataset/centerlines_b.txt")
+    track_c = centerlines_txt2tracks("../dataset/centerlines_c.txt")
+    merge_index_a_into_bc = curveindex_end(track_b)
+    append_to_curve!(track_b,track_c) # b and c together become lane 1
+    lane_bc = Lane(LaneTag(2,1),track_b,width=3.)
+    seg_bc = RoadSegment(2,[lane_bc])
+
+    push!(roadway_interaction.segments,seg_bc)
+
+        # Form segment 1 of the road
+    track_a = centerlines_txt2tracks("../dataset/centerlines_a.txt"); # Top most on ramp
+    lane_a = Lane(LaneTag(1,1),track_a,width=3.,next=RoadIndex(merge_index_a_into_bc,LaneTag(2,1)))
+    seg_a = RoadSegment(1,[lane_a])
+
+    push!(roadway_interaction.segments,seg_a)
+
+        # Form segment 3 of the road
+    track_d = centerlines_txt2tracks("../dataset/centerlines_d.txt")
+    lane_d = Lane(LaneTag(3,1),track_d,width=4.)
+    seg_d = RoadSegment(3,[lane_d])
+    push!(roadway_interaction.segments,seg_d)
+
+        # Form segment 4
+    track_e = centerlines_txt2tracks("../dataset/centerlines_e.txt")
+    lane_e = Lane(LaneTag(4,1),track_e,width=4.)
+    seg_e = RoadSegment(4,[lane_e])
+    push!(roadway_interaction.segments,seg_e)
+
+# Now going in other direction i.e. bottom left to top right direction of travel
+        # Form segment 4
+    track_f = centerlines_txt2tracks("../dataset/centerlines_f.txt")
+    lane_f = Lane(LaneTag(5,1),track_f)
+    seg_f = RoadSegment(5,[lane_f])
+    push!(roadway_interaction.segments,seg_f)
+
+        # Continue on segment 4
+    track_g = centerlines_txt2tracks("../dataset/centerlines_g.txt")
+    track_h = centerlines_txt2tracks("../dataset/centerlines_h.txt")
+    merge_index_i_into_gh = curveindex_end(track_g)
+    append_to_curve!(track_g,track_h)
+    lane_gh = Lane(LaneTag(6,1),track_g,width=4.)
+    seg_gh = RoadSegment(6,[lane_gh])
+    push!(roadway_interaction.segments,seg_gh)
+
+        # Form segment 6, the on ramp
+    track_i = centerlines_txt2tracks("../dataset/centerlines_i.txt")
+    lane_i = Lane(LaneTag(7,1),track_i,width=4.,next=RoadIndex(merge_index_i_into_gh,LaneTag(6,1)));
+    seg_i = RoadSegment(7,[lane_i])
+    push!(roadway_interaction.segments,seg_i)
+
     return roadway_interaction
 end
