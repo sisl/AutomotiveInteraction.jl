@@ -146,7 +146,7 @@ function make_roadway_interaction()
     road = Roadway()
         # Make segment 1: the on ramp a and first part of lane: b1
     track_a = centerlines_txt2tracks("../dataset/centerlines_a.txt"); # Top most on ramp
-    lane_a = Lane(LaneTag(1,1),track_a)
+    lane_a = Lane(LaneTag(1,1),track_a,boundary_left=LaneBoundary(:broken,:white))
 
     track_b1 = centerlines_txt2tracks("../dataset/centerlines_b1.txt")
     lane_b1 = Lane(LaneTag(1,2),track_b1)
@@ -162,7 +162,7 @@ function make_roadway_interaction()
 
         # Make segment 3: c and d
     track_c = centerlines_txt2tracks("../dataset/centerlines_c.txt")
-    lane_c = Lane(LaneTag(3,1),track_c)
+    lane_c = Lane(LaneTag(3,1),track_c,boundary_left=LaneBoundary(:broken,:white))
 
     track_d = centerlines_txt2tracks("../dataset/centerlines_d.txt")
     lane_d = Lane(LaneTag(3,2),track_d)
@@ -172,17 +172,17 @@ function make_roadway_interaction()
             # Other side of the divider
         # Make segment 4: g,f1,e1 
     track_g = centerlines_txt2tracks("../dataset/centerlines_g.txt")
-    lane_g = Lane(LaneTag(4,1),track_g)
+    lane_g = Lane(LaneTag(4,1),track_g,boundary_left=LaneBoundary(:broken,:white))
 
     track_f1 = centerlines_txt2tracks("../dataset/centerlines_f1.txt")
-    lane_f1 = Lane(LaneTag(4,2),track_f1)
+    lane_f1 = Lane(LaneTag(4,2),track_f1,boundary_left=LaneBoundary(:broken,:white))
 
     track_e1 = centerlines_txt2tracks("../dataset/centerlines_e1.txt")
     lane_e1 = Lane(LaneTag(4,3),track_e1)
 
         # Make segment 5: f2,e2. And connect 3 lanes of segment 4 into segment 5 two lanes
     track_f2 = centerlines_txt2tracks("../dataset/centerlines_f2.txt")
-    lane_f2 = Lane(LaneTag(5,1),track_f2)
+    lane_f2 = Lane(LaneTag(5,1),track_f2,boundary_left=LaneBoundary(:broken,:white))
 
     track_e2 = centerlines_txt2tracks("../dataset/centerlines_e2.txt")
     lane_e2 = Lane(LaneTag(5,2),track_e2)

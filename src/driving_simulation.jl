@@ -174,7 +174,7 @@ end
 
 # Examples
 ```julia
-run_vehicles(id_list=[7,10,11,18,22,25,29],roadway=roadway_interaction,filename="media/run_veh.mp4")
+run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway_interaction,filename="media/run_test.mp4")
 ```
 """
 function run_vehicles(;id_list,start_frame=1,duration=10.,filename="media/run_vehs.mp4",
