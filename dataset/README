@@ -1,0 +1,17 @@
+# Overview
+- Make the `DR_CHN_Merging` roadway by reading in the centerlines in `AutomotiveInteraction.jl/dataset`
+- These centerlines have been modified from the original ones in the `centerlines_DR_CHN_Merging_ZS` folder
+- The long lane being merged into by on ramp was split into before and after merge point in 2 separate txt files
+- Eg: `output_centerline_1.txt` has been split into `centerlines_b1.txt` (before merge point) and `centerlines_b2.txt` (after).
+- Similarly, `output_centerline_5.txt` has been split into `cetnerlines_g.txt` (before) and `centerlines_h.txt` (after)
+- Finally, the files in `centerlines_DR_CHN_Merging_ZS` folder `output_centerline_<>.txt` had x coords in row 1 and y coords in row 2.
+- The current `centerlines_<>.txt` have x in col 1 and y in col 2
+
+# Details
+- Reads in the centerline information from `AutomotiveInteraction.jl/dataset`
+- Segment 1: Has 2 lanes: On ramp `a` is lane 1 and `b1` is lane 2
+- Segment 2: Has 1 lane: `b1` is lane 1. Both `a` and `b1` connect into `b2`
+- Segment 3: Has 2 lanes: `c` is lane 1 and `d` is lane 2
+- Segment 4: Has 3 lanes: `g` is lane 1, `f1` is lane 2, `e1` is lane 3.
+- Segment 5: Has 2 lanes: `f2` is lane 1, `e2` is lane 2. `e1` connects to `e2` and both `g` and `f1` to `e2`
+    - Note that convention used here is that right most lane in direction of travel is given lane id 1

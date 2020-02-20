@@ -106,3 +106,58 @@ function car_df_index(trajdata::INTERACTIONTrajdata, carid::Int, frame::Int)
 
     retval
 end
+
+# function: read vehicle tracks from provided csv file into object called `traj_interaction`
+"""
+    function read_veh_tracks()
+- Reads the vehicle tracks information from `../dataset/vehicle_tracks_000.csv`
+- Returns `Trajdata` object containing list of scenes from the vehicle track information
+
+# Example
+```julia
+traj_interaction = read_veh_tracks()
+```
+"""
+function read_veh_tracks()
+    # Read the csv data into tdraw which recasts csv info into a dataframe and also provides two
+    # dicts called car2start and frame2cars
+    tdraw = INTERACTIONTrajdata("../dataset/vehicle_tracks_000.csv")
+    df = tdraw.df
+    vehdefs = Dict{Int, VehicleDef}()
+    states = Array{RecordState{VehicleState, Int}}(undef, nrow(df))
+    frames = Array{RecordFrame}(undef, nframes(tdraw))
+
+    # Initialize the vehicles physically i.e type, length and width
+    for (id, dfind) in tdraw.car2start
+        # CAUTION: Hardcoding vehicle type to be just car shown by the first argument being 2
+        vehdefs[id] = VehicleDef(2, df[dfind, :length], df[dfind, :width])
+    end
+
+    # Fill in the vehicle state information in terms of x,y and speed
+    state_ind = 0
+
+    for frame in 1 : nframes(tdraw)
+
+        frame_lo = state_ind+1
+
+        for id in carsinframe(tdraw, frame)
+
+            dfind = car_df_index(tdraw, id, frame)
+
+            posG = VecSE2(df[dfind, :x], df[dfind, :y], df[dfind, :psi_rad])
+            vx = df[dfind,:vx]
+            vy = df[dfind,:vy]
+            speed = sqrt(vx*vx + vy*vy)
+
+            states[state_ind += 1] = RecordState(VehicleState(posG, roadway_interaction, speed), id)
+        end
+
+        frame_hi = state_ind
+        frames[frame] = RecordFrame(frame_lo, frame_hi)
+    end
+    
+    # Trajdata is defined in AutomotiveDrivingModels.jl/states/trajdatas.jl. It is a ListRecord
+    # from Records.jl. Its utility is storing a list of scenes
+    traj_interaction = Trajdata(INTERACTION_TIMESTEP, frames, states, vehdefs)
+    return traj_interaction
+end

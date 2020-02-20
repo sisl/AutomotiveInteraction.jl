@@ -6,7 +6,9 @@ Get a specific scene from trajdata
 
 # Example:
 ```julia
-scene = get_scene(1,int_trajdata)
+scene = Scene(500)
+scene = get_scene(1,traj_interaction)
+render(scene,roadway_interaction)
 ```
 """
 function get_scene(framenum::Int64,traj=traj_interaction)
@@ -28,7 +30,7 @@ video_trajdata_replay(range=1:100,roadway=roadway,traj=traj_interaction,filename
 ```
 """
 function video_trajdata_replay(id_list = [];range=nothing,traj=traj_interaction,
-	roadway=roadway_interaction, filename="media/interaction_vids/$(range).mp4")
+	roadway=roadway_interaction, filename="../media/$(range).mp4")
 
     frames = Frames(MIME("image/png"), fps=10)
     scene = Scene(500)
@@ -112,24 +114,26 @@ end
 
 # function: make a video from a list of scenes
 """
-    function scenelist2video(scene_list;filename = "media/mobil/scene_to_video.mp4")
-- Make video from a list of scenes
+    function scenelist2video(scene_list;filename = "media/scenelist_to_video.mp4")
+- Make video from a list of scenes (generally generated using `get_hallucination_scenes`
 
 # Examples
 ```julia
-scene_list = get_hallucination_scenes(scene2,models=models,traj=int_trajdata,roadway=roadway2)
-scenelist2video(scene_list,roadway=roadway2,filename="media/interaction_vids/merge.mp4")
+scene = Scene(500)
+get!(scene,traj_interaction,1);
+scene_list = get_hallucination_scenes(scene,models=models);
+scenelist2video(scene_list,filename="media/scenelist_to_video.mp4")
 ```
 """
-function scenelist2video(scene_list;id_list=[],
-        filename = "media/mobil/scene_to_video.mp4",roadway=roadway_ngsim)
+function scenelist2video(scene_list;id_list=[],filename = "media/scenelist_to_video.mp4",
+        roadway=roadway_interaction)
     frames = Frames(MIME("image/png"),fps = 10)
     
     # Loop over list of scenes and convert to video
     for i in 1:length(scene_list)
         if !isempty(id_list) keep_vehicle_subset!(scene_list[i],id_list) end
         scene_visual = render(scene_list[i],roadway,
-        #[IDOverlay(colorant"white",12)],
+        [IDOverlay()],
         cam=FitToContentCamera(0.),
         #cam = SceneFollowCamera(10.)
         )
