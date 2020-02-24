@@ -248,3 +248,63 @@ function extend_track_straight!(track,l::Float64)
     push!(track,c_ext)
     return track
 end
+
+# function: roadway_interaction with straight extensions to avoid veh reversal
+function make_roadway_interaction_with_extensions()
+    road = Roadway()
+        # Make segment 1: the on ramp a and first part of lane: b1
+    track_a = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_a.txt")); # Top most on ramp
+    lane_a = Lane(LaneTag(1,1),track_a,boundary_left=LaneBoundary(:broken,:white))
+
+    track_b1 = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_b1.txt")); # Top most on ramp
+    lane_b1 = Lane(LaneTag(1,2),track_b1)
+
+        # Make segment 2: second part of lane: b2. And connect both lanes of segment 1 into segment 2
+    track_b2_unext = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_b2.txt"))
+    track_b2 = extend_track_straight!(track_b2_unext,50.)
+    lane_b2 = Lane(LaneTag(2,1),track_b2)
+    connect!(lane_a,lane_b2)
+    connect!(lane_b1,lane_b2)
+
+    push!(road.segments,RoadSegment(1,[lane_a,lane_b1]))
+    push!(road.segments,RoadSegment(2,[lane_b2]))
+
+        # Make segment 3: c and d
+    track_c_unext = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_c.txt"))
+    track_c = extend_track_straight!(track_c_unext,50.)
+    lane_c = Lane(LaneTag(3,1),track_c,boundary_left=LaneBoundary(:broken,:white))
+
+    track_d_unext = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_d.txt"))
+    track_d = extend_track_straight!(track_d_unext,50.)
+    lane_d = Lane(LaneTag(3,2),track_d)
+
+    push!(road.segments,RoadSegment(3,[lane_c,lane_d]))
+
+            # Other side of the divider
+        # Make segment 4: g,f1,e1
+    track_g = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_g.txt"))
+    lane_g = Lane(LaneTag(4,1),track_g,boundary_left=LaneBoundary(:broken,:white))
+
+    track_f1 = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_f1.txt"))
+    lane_f1 = Lane(LaneTag(4,2),track_f1,boundary_left=LaneBoundary(:broken,:white))
+
+    track_e1 = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_e1.txt"))
+    lane_e1 = Lane(LaneTag(4,3),track_e1)
+
+        # Make segment 5: f2,e2. And connect 3 lanes of segment 4 into segment 5 two lanes
+    track_f2_unext = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_f2.txt"))
+    track_f2 = extend_track_straight!(track_f2_unext,50.)
+    lane_f2 = Lane(LaneTag(5,1),track_f2,boundary_left=LaneBoundary(:broken,:white))
+
+    track_e2_unext = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_e2.txt"))
+    track_e2 = extend_track_straight!(track_e2_unext,50.)
+    lane_e2 = Lane(LaneTag(5,2),track_e2)
+    connect!(lane_e1,lane_e2)
+    connect!(lane_f1,lane_f2)
+    connect!(lane_g,lane_f2)
+
+    push!(road.segments,RoadSegment(4,[lane_g,lane_f1,lane_e1]))
+    push!(road.segments,RoadSegment(5,[lane_f2,lane_e2]))
+
+    return road
+end
