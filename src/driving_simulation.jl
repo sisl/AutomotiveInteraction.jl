@@ -142,7 +142,7 @@ scenelist2video(scene_list,filename="media/driving_vid.mp4")
 ```
 """
 function get_hallucination_scenes(scene_halluc;models,start_step=1,duration=5,id_list=[],
-        traj=traj_interaction,verbosity = false,timestep=INTERACTION_TIMESTEP,roadway=roadway_interaction)
+        traj,verbosity = false,timestep=INTERACTION_TIMESTEP,roadway)
         # Setting up
     halluc_scenes_list = []
     #scene_halluc = get_scene(start_step,traj) # Frame to start hallucination from
@@ -172,20 +172,27 @@ end
 - Assign default 2D driver model to the vehicle and run it for `duration` seconds on `roadway`
 - Writes a video to location specified by `filename`
 
+# Arguments
+- id_list: Vehicle ids in this list will be kept in the simulation. Others will be deleted
+- traj: Vehicle traj data stored in the `Trajdata` type provided by `AutomotiveDrivingModels.jl`
+- start_frame: Frame number of vehicle track data in `traj`
+- roadway: a roadway object eg: `roadway_interaction`
+
 # Examples
 ```julia
-run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway_interaction,filename="media/run_test.mp4")
+run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway_interaction,
+    filename=joinpath(@__DIR__,"julia_notebooks/media/run_test_ext_long.mp4"))
 ```
 """
-function run_vehicles(;id_list,start_frame=1,duration=10.,filename="media/run_vehs.mp4",
-    traj = traj_interaction, roadway= roadway_interaction)
+function run_vehicles(;id_list,start_frame=1,duration=10.,filename,traj,roadway)
 
     scene_real = get_scene(start_frame,traj)
     keep_vehicle_subset!(scene_real,id_list)
 
     models = make_def_models(scene_real)
 
-    scene_list = get_hallucination_scenes(scene_real,models=models,id_list=id_list,duration=duration,roadway=roadway)
+    scene_list = get_hallucination_scenes(scene_real,models=models,
+        id_list=id_list,duration=duration,traj=traj,roadway=roadway)
     scenelist2video(scene_list,filename=filename,roadway=roadway)
     return nothing
 end

@@ -113,15 +113,18 @@ end
 - Reads the vehicle tracks information from `../dataset/vehicle_tracks_000.csv`
 - Returns `Trajdata` object containing list of scenes from the vehicle track information
 
+# Arguments
+- roadway: Used in the vehicle state to create `Frenet` coords for the vehicle on the provided roadway
+
 # Example
 ```julia
-traj_interaction = read_veh_tracks()
+traj_interaction = read_veh_tracks(roadway=roadway_interaction)
 ```
 """
-function read_veh_tracks()
+function read_veh_tracks(;roadway)
     # Read the csv data into tdraw which recasts csv info into a dataframe and also provides two
     # dicts called car2start and frame2cars
-    tdraw = INTERACTIONTrajdata("../dataset/vehicle_tracks_000.csv")
+    tdraw = INTERACTIONTrajdata(joinpath(@__DIR__,"../dataset/vehicle_tracks_000.csv"))
     df = tdraw.df
     vehdefs = Dict{Int, VehicleDef}()
     states = Array{RecordState{VehicleState, Int}}(undef, nrow(df))
@@ -149,7 +152,7 @@ function read_veh_tracks()
             vy = df[dfind,:vy]
             speed = sqrt(vx*vx + vy*vy)
 
-            states[state_ind += 1] = RecordState(VehicleState(posG, roadway_interaction, speed), id)
+            states[state_ind += 1] = RecordState(VehicleState(posG, roadway, speed), id)
         end
 
         frame_hi = state_ind

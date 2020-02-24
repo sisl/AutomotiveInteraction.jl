@@ -7,6 +7,7 @@ using AutoViz
 using DataFrames
 using Records
 using DelimitedFiles
+using Reel
 
 export keep_vehicle_subset!,
     make_def_models,
@@ -22,8 +23,18 @@ export append_to_curve!,
     append_headings,
     centerlines_txt2tracks,
     make_roadway_interaction,
-    make_roadway_ngsim
+    make_roadway_ngsim,
+    make_roadway_interaction_with_extensions
 include("roadway_building.jl")
 
+export INTERACTIONTrajdata,
+    carsinframe,
+    car_df_index,
+    read_veh_tracks
+include("veh_track_reading.jl")
 
+export get_scene,
+    video_trajdata_replay,
+    scenelist2video
+include("visualization.jl")
 end

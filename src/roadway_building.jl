@@ -207,7 +207,7 @@ roadway_ngsim = make_roadway_ngsim()
 ```
 """
 function make_roadway_ngsim()
-    roadway_ngsim = open(io->read(io, MIME"text/plain"(), Roadway),joinpath(@__DIR__,"../dataset/ngsim_101.txt"), "r")
+    roadway_ngsim = open(io->read(io, MIME"text/plain"(), Roadway),joinpath(@__DIR__,"dataset/ngsim_101.txt"), "r")
     return roadway_ngsim
 end
 
@@ -250,6 +250,9 @@ function extend_track_straight!(track,l::Float64)
 end
 
 # function: roadway_interaction with straight extensions to avoid veh reversal
+"""
+- Make roadway interaction but with added extensions to avoid vehicle getting blocked at road end
+"""
 function make_roadway_interaction_with_extensions()
     road = Roadway()
         # Make segment 1: the on ramp a and first part of lane: b1
@@ -261,7 +264,7 @@ function make_roadway_interaction_with_extensions()
 
         # Make segment 2: second part of lane: b2. And connect both lanes of segment 1 into segment 2
     track_b2_unext = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_b2.txt"))
-    track_b2 = extend_track_straight!(track_b2_unext,50.)
+    track_b2 = extend_track_straight!(track_b2_unext,100.)
     lane_b2 = Lane(LaneTag(2,1),track_b2)
     connect!(lane_a,lane_b2)
     connect!(lane_b1,lane_b2)
@@ -271,11 +274,11 @@ function make_roadway_interaction_with_extensions()
 
         # Make segment 3: c and d
     track_c_unext = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_c.txt"))
-    track_c = extend_track_straight!(track_c_unext,50.)
+    track_c = extend_track_straight!(track_c_unext,100.)
     lane_c = Lane(LaneTag(3,1),track_c,boundary_left=LaneBoundary(:broken,:white))
 
     track_d_unext = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_d.txt"))
-    track_d = extend_track_straight!(track_d_unext,50.)
+    track_d = extend_track_straight!(track_d_unext,100.)
     lane_d = Lane(LaneTag(3,2),track_d)
 
     push!(road.segments,RoadSegment(3,[lane_c,lane_d]))
@@ -293,11 +296,11 @@ function make_roadway_interaction_with_extensions()
 
         # Make segment 5: f2,e2. And connect 3 lanes of segment 4 into segment 5 two lanes
     track_f2_unext = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_f2.txt"))
-    track_f2 = extend_track_straight!(track_f2_unext,50.)
+    track_f2 = extend_track_straight!(track_f2_unext,100.)
     lane_f2 = Lane(LaneTag(5,1),track_f2,boundary_left=LaneBoundary(:broken,:white))
 
     track_e2_unext = centerlines_txt2tracks(joinpath(@__DIR__,"../dataset/centerlines_e2.txt"))
-    track_e2 = extend_track_straight!(track_e2_unext,50.)
+    track_e2 = extend_track_straight!(track_e2_unext,100.)
     lane_e2 = Lane(LaneTag(5,2),track_e2)
     connect!(lane_e1,lane_e2)
     connect!(lane_f1,lane_f2)

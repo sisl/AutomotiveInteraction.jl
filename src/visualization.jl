@@ -125,8 +125,7 @@ scene_list = get_hallucination_scenes(scene,models=models);
 scenelist2video(scene_list,filename="media/scenelist_to_video.mp4")
 ```
 """
-function scenelist2video(scene_list;id_list=[],filename = "media/scenelist_to_video.mp4",
-        roadway=roadway_interaction)
+function scenelist2video(scene_list;id_list=[],roadway,filename)
     frames = Frames(MIME("image/png"),fps = 10)
     
     # Loop over list of scenes and convert to video
