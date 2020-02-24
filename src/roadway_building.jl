@@ -210,3 +210,41 @@ function make_roadway_ngsim()
     roadway_ngsim = open(io->read(io, MIME"text/plain"(), Roadway),joinpath(@__DIR__,"../dataset/ngsim_101.txt"), "r")
     return roadway_ngsim
 end
+
+# function: To create road extensions
+"""
+- Takes a CurvePt `c` and a distance `l`
+- Returns a curve of length `l` starting at `c` and preserving its angle
+
+# Examples
+```julia
+c_new = straight_extension(c)
+track_extension = gen_straight_segment(c,c_new)
+append_to_curve(track_orig,track_extension)
+```
+"""
+function straight_extension(c::CurvePt,l::Float64)
+    x1 = c.pos.x
+    y1 = c.pos.y
+    t = c.pos.θ
+    x2 = x1+l*cos(t)
+    y2 = y1+l*sin(t)
+    return CurvePt(VecSE2(x2,y2,t),c.s+l)
+    #return gen_straight_curve(VecE2(x1,y1),VecE2(x2,y2),2)
+end
+
+# function: Take a track and straight extension it
+"""
+    function extend_track_straight!(track,l::Float64)
+- Take a `track` and length `l` and extend straight after end
+
+# Examples
+```julia
+extended_track_e2 = extend_track_straight(track_e2,50.)
+```
+"""
+function extend_track_straight!(track,l::Float64)
+    c_ext = straight_extension(track[end],l)
+    push!(track,c_ext)
+    return track
+end
