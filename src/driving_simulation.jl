@@ -196,3 +196,34 @@ function run_vehicles(;id_list,start_frame=1,duration=10.,filename,traj,roadway)
     scenelist2video(scene_list,filename=filename,roadway=roadway)
     return nothing
 end
+
+"""
+    function test_barrier_vehicle
+- Place a vehicle that does not move to test how far IDM+MOBIL driven vehicles look ahead
+
+# Examples
+```julia
+test_barrier_vehicle(id_list=[20,29,19,28,6,8,25,2,10,7,18,12,100],roadway=road_ext,
+    traj=traj_ext,filename=joinpath(@__DIR__,"../julia_notebooks/media/barrier_test.mp4"))
+```
+"""
+function test_barrier_vehicle(;id_list,start_frame=1,duration=10.,
+    roadway,traj,filename)
+    scene = get_scene(start_frame,traj)
+    keep_vehicle_subset!(scene,id_list)
+    veh_20 = scene[findfirst(20,scene)]
+    veh20_state = veh_20.state
+    deleteat!(scene,findfirst(20,scene)) # Remove veh 20 from scene
+    barrier_state = VehicleState(veh20_state.posG,veh20_state.posF,0.)
+    barrier_id = 100
+    barrier_veh = Vehicle(barrier_state,VehicleDef(),barrier_id)
+    push!(scene,barrier_veh) # Insert barrier vehicle instead of the removed vehicle 20
+
+    models = make_def_models(scene)
+    models[100] = IntelligentDriverModel(v_des=0.)
+    # deleteat!(id_list,findall(x->x==20,id_list))
+    scene_list = get_hallucination_scenes(scene,models=models,id_list=id_list,
+        duration=duration,traj=traj,roadway=roadway)
+    scenelist2video(scene_list,filename=filename,roadway=roadway)
+    return nothing
+end

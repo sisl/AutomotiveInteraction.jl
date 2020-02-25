@@ -13,7 +13,8 @@ export keep_vehicle_subset!,
     make_def_models,
     make_TimLaneChanger_models,
     get_hallucination_scenes,
-    run_vehicles
+    run_vehicles,
+    test_barrier_vehicle
 include("driving_simulation.jl")
 
 
@@ -37,4 +38,5 @@ export get_scene,
     video_trajdata_replay,
     scenelist2video
 include("visualization.jl")
-end
+
+end # End module
