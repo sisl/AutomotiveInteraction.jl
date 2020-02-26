@@ -102,7 +102,7 @@ function make_def_models(scene)
     models = Dict{Int64,DriverModel}()
     for veh in scene
         models[veh.id] = Tim2DDriver(INTERACTION_TIMESTEP,
-            mlane=MOBIL(INTERACTION_TIMESTEP,mlon=IntelligentDriverModel()))
+            mlane=MOBIL(INTERACTION_TIMESTEP,mlon=uncertain_IDM()))
     end
     return models
 end
@@ -150,14 +150,14 @@ function get_hallucination_scenes(scene_halluc;models,start_step=1,duration=5,id
     
     nsteps = duration/timestep
     for (i,t) in enumerate(start_step:start_step+nsteps-1)
-        
+        print("timestep = $t\n")
         if !isempty(id_list) keep_vehicle_subset!(scene_halluc,id_list) end
         
         actions = Array{Any}(undef,length(scene_halluc))
-
+        print("simulator: Before get actions step\n")
             # Propagation of scene forward
         get_actions!(actions,scene_halluc,roadway,models)
-
+        print("simulator:after get actions step \n")
         tick!(scene_halluc,roadway,actions,timestep)
         
         push!(halluc_scenes_list,deepcopy(scene_halluc))
@@ -207,8 +207,7 @@ test_barrier_vehicle(id_list=[20,29,19,28,6,8,25,2,10,7,18,12,100],roadway=road_
     traj=traj_ext,filename=joinpath(@__DIR__,"../julia_notebooks/media/barrier_test.mp4"))
 ```
 """
-function test_barrier_vehicle(;id_list,start_frame=1,duration=10.,
-    roadway,traj,filename)
+function test_barrier_vehicle(;id_list,start_frame=1,duration=10.,roadway,traj,filename)
     scene = get_scene(start_frame,traj)
     keep_vehicle_subset!(scene,id_list)
     veh_20 = scene[findfirst(20,scene)]
