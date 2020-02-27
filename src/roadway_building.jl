@@ -311,3 +311,67 @@ function make_roadway_interaction_with_extensions()
 
     return road
 end
+
+# function: Build roadways to test jumpy behavior in presence of discontinuity
+"""
+    function make_discont_roadway(;segment_length::Float64=20., separation::Float64=2.)
+- Intended to test whether jumpy behavior is shown by vehicle
+
+# Used by
+`test_jumpy_vehicle`
+"""
+function make_discont_roadway_straight(;segment_length::Float64=20., separation::Float64=2.)
+    track_a = gen_straight_curve(VecE2(0.,0.),VecE2(segment_length,0.),2)
+    track_b = gen_straight_curve(VecE2(segment_length+separation,0.),VecE2(segment_length+separation+segment_length,0.),2)
+    lane_a = Lane(LaneTag(1,1),track_a)
+    lane_b = Lane(LaneTag(2,1),track_b)
+    connect!(lane_a,lane_b)
+    road = Roadway()
+    push!(road.segments,RoadSegment(1,[lane_a]))
+    push!(road.segments,RoadSegment(2,[lane_b]))
+    return road
+end
+
+"""
+    function make_discont_roadway_jagged(;segment_length::Float64=20., separation::Float64=2.)
+
+- road with two horizontal segments but seperated in y to create a zig zag
+
+# Examples
+```julia
+road_zigzag = make_discont_roadway_jagged()
+```
+"""
+function make_discont_roadway_jagged(;segment_length::Float64=20., separation::Float64=2.)
+    track_a = gen_straight_curve(VecE2(0.,0.),VecE2(segment_length,0.),2)
+    track_b = gen_straight_curve(VecE2(segment_length+separation,10.),VecE2(segment_length+separation+segment_length,10.),2)
+    lane_a = Lane(LaneTag(1,1),track_a)
+    lane_b = Lane(LaneTag(2,1),track_b)
+    connect!(lane_a,lane_b)
+    road = Roadway()
+    push!(road.segments,RoadSegment(1,[lane_a]))
+    push!(road.segments,RoadSegment(2,[lane_b]))
+    return road
+end
+
+# Function: highlight lanes by overlaying colors
+"""
+    function show_lane_overlays(road_ext::Roadway,traj_ext)
+- Draw lane colored overlays on the road_ext
+
+# Examples
+```julia
+show_lane_overlays(road_ext,traj_ext)
+```
+"""
+function show_lane_overlays(road_ext::Roadway,traj_ext)
+    lo_a = LaneOverlay(road_ext[LaneTag(1,1)],RGBA(0.,0.,1.,0.5))
+    lo_b1 = LaneOverlay(road_ext[LaneTag(1,2)],RGBA(1.,0.,0.,0.5))
+    lo_b2 = LaneOverlay(road_ext[LaneTag(2,1)],RGBA(0.,1.,0.,0.5))
+    
+    lo_c = LaneOverlay(road_ext[LaneTag(3,1)],RGBA(1.,1.,0.,0.5))
+    lo_d = LaneOverlay(road_ext[LaneTag(3,2)],RGBA(0.,1.,1.,0.5))
+
+    scene = get_scene(1,traj_ext)
+    return render(scene,road_ext,[lo_a,lo_b1,lo_b2,lo_c,lo_d])
+end

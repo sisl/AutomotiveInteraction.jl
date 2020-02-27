@@ -142,10 +142,10 @@ scenelist2video(scene_list,filename="media/driving_vid.mp4")
 ```
 """
 function get_hallucination_scenes(scene_halluc;models,start_step=1,duration=5,id_list=[],
-        traj,verbosity = false,timestep=INTERACTION_TIMESTEP,roadway)
+        verbosity = false,timestep=INTERACTION_TIMESTEP,roadway)
         # Setting up
     halluc_scenes_list = []
-    #scene_halluc = get_scene(start_step,traj) # Frame to start hallucination from
+    
     push!(halluc_scenes_list,deepcopy(scene_halluc))
     
     nsteps = duration/timestep
@@ -184,16 +184,36 @@ run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway_interaction,
     filename=joinpath(@__DIR__,"julia_notebooks/media/run_test_ext_long.mp4"))
 ```
 """
-function run_vehicles(;id_list,start_frame=1,duration=10.,filename,traj,roadway)
+function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename,traj,roadway)
 
     scene_real = get_scene(start_frame,traj)
-    keep_vehicle_subset!(scene_real,id_list)
+    if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
 
     models = make_def_models(scene_real)
 
     scene_list = get_hallucination_scenes(scene_real,models=models,
-        id_list=id_list,duration=duration,traj=traj,roadway=roadway)
+        id_list=id_list,duration=duration,roadway=roadway)
     scenelist2video(scene_list,filename=filename,roadway=roadway)
+    return nothing
+end
+
+"""
+- Written to debug the jumpy behavior by overlaying the curvepoints of roadway
+
+# Example
+run_vehicles_curvept_overlay(id_list=[6,8],roadway=road_ext,traj=traj_ext,
+    filename = "/scratch/AutomotiveInteraction/julia_notebooks/media/road_ext_jumpy.mp4")
+"""
+function run_vehicles_curvept_overlay(;id_list=[],start_frame=1,duration=10.,filename,traj,roadway)
+
+    scene_real = get_scene(start_frame,traj)
+    if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
+
+    models = make_def_models(scene_real)
+
+    scene_list = get_hallucination_scenes(scene_real,models=models,
+        id_list=id_list,duration=duration,roadway=roadway)
+    scenelist2video_curvepts(scene_list,filename=filename,roadway=roadway)
     return nothing
 end
 
@@ -224,5 +244,34 @@ function test_barrier_vehicle(;id_list,start_frame=1,duration=10.,roadway,traj,f
     scene_list = get_hallucination_scenes(scene,models=models,id_list=id_list,
         duration=duration,traj=traj,roadway=roadway)
     scenelist2video(scene_list,filename=filename,roadway=roadway)
+    return nothing
+end
+
+# function: test jumpy vehicle
+"""
+    function test_jumpy_vehicle()
+- Written to investigate non-smooth behavior.
+- Want to assess whether having no curve points (for example when lanes are connected using `connect!`)
+- results in jumpy vehicle trajectory behavior
+
+# Arguments
+- `segment_length` Length of the segment. There will be two such segments with a separation between 
+- `separation` Length of the break between two road segments
+
+# Examples
+```julia
+test_jumpy_vehicle(segment_length = 50.,separation = 5.,
+    filename="/scratch/AutomotiveInteraction/julia_notebooks/media/jumpy.mp4")
+```
+"""
+function test_jumpy_vehicle(;segment_length::Float64=100.,separation::Float64=2.,duration=10.,
+        filename=joinpath(@__DIR__,"../julia_notebooks/media/jumpy_test.mp4"))
+    road_break = make_discont_roadway_curved(segment_length = segment_length,separation=separation)
+    scene = Scene(500)
+    push!(scene,Vehicle(VehicleState(VecSE2(0.,0.,0.),road_break,5.),VehicleDef(),1))
+    models = Dict{Int64,DriverModel}()
+    models[1] = Tim2DDriver(0.1)
+    scene_list = get_hallucination_scenes(scene,roadway=road_break,models=models,duration=duration)
+    scenelist2video_curvepts(scene_list,roadway=road_break,filename=filename)
     return nothing
 end

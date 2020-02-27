@@ -75,18 +75,21 @@ end
 """
     curve_pts_overlay
 Displays circles at the curve points that constitute the lanes of a road: 
-- color: the color of the blinker
-- size: the size of the blinker 
+- color: the color of the point
+- size: the size of the point
+
+# Examples
+```julia
+render(scene,road,[curvepts_overlay(roadway_ext,colorant"yellow",0.05)])
+```
 """ 
 struct curvepts_overlay <: SceneOverlay
     roadway
-    color::Colorant # yellow 
+    color::Colorant # eg: colorant"yellow"
     size::Float64
 end
 
-function AutoViz.render!(rendermodel::RenderModel, overlay::curvepts_overlay, 
-        scene::Frame{Entity{S,D,I}}, roadway::R) where {S,D,I,R}
-    
+function AutoViz.render!(rendermodel::RenderModel, overlay::curvepts_overlay, scene::Frame{Entity{S,D,I}}, roadway::R) where {S,D,I,R}
     
     num_segments = length(roadway.segments)
     
@@ -112,6 +115,27 @@ function AutoViz.render!(rendermodel::RenderModel, overlay::curvepts_overlay,
     
 end
 
+"""
+    LaneOverlay
+
+- Intended to debug lanes and how vehicle 4 is teleporting from lane a to lane b2
+
+# Examples
+```julia
+lane_overlay = LaneOverlay(roadway[LaneTag(1,1)], RGBA(0.0,0.0,1.0,0.5))
+render(scene, roadway, [lane_overlay], cam=FitToContentCamera(0.))
+```
+"""
+struct LaneOverlay <: SceneOverlay
+    lane::Lane
+    color::Colorant
+end
+
+function AutoViz.render!(rendermodel::RenderModel, overlay::LaneOverlay, scene::Scene, roadway::Roadway)
+    render!(rendermodel, overlay.lane, roadway, color_asphalt=overlay.color) # this display a lane with the specified color
+    return rendermodel
+end
+
 # function: make a video from a list of scenes
 """
     function scenelist2video(scene_list;filename = "media/scenelist_to_video.mp4")
@@ -133,6 +157,37 @@ function scenelist2video(scene_list;id_list=[],roadway,filename)
         if !isempty(id_list) keep_vehicle_subset!(scene_list[i],id_list) end
         scene_visual = render(scene_list[i],roadway,
         [IDOverlay(),TextOverlay(text=["frame=$(i)"],font_size=12)],
+        cam=FitToContentCamera(0.),
+        #cam = SceneFollowCamera(10.)
+        )
+        push!(frames,scene_visual)
+    end
+    print("Making video filename: $(filename)\n")
+    write(filename,frames)
+    return nothing
+end
+
+# function: make a video from a list of scenes with curvepts overlayed
+"""
+    function scenelist2video(scene_list;filename = "media/scenelist_to_video.mp4")
+- Make video from a list of scenes (generally generated using `get_hallucination_scenes`
+
+# Examples
+```julia
+scene = Scene(500)
+get!(scene,traj_interaction,1);
+scene_list = get_hallucination_scenes(scene,models=models);
+scenelist2video(scene_list,filename="media/scenelist_to_video.mp4")
+```
+"""
+function scenelist2video_curvepts(scene_list;id_list=[],roadway,filename)
+    frames = Frames(MIME("image/png"),fps = 10)
+    
+    # Loop over list of scenes and convert to video
+    for i in 1:length(scene_list)
+        if !isempty(id_list) keep_vehicle_subset!(scene_list[i],id_list) end
+        scene_visual = render(scene_list[i],roadway,
+        [IDOverlay(),TextOverlay(text=["frame=$(i)"],font_size=12),curvepts_overlay(roadway,colorant"yellow",0.05)],
         cam=FitToContentCamera(0.),
         #cam = SceneFollowCamera(10.)
         )
