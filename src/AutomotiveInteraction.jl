@@ -9,6 +9,7 @@ using DataFrames
 using Records
 using DelimitedFiles
 using Reel
+using Parameters
 
 export 
     keep_vehicle_subset!,
@@ -50,5 +51,15 @@ export
     render!,
     scenelist2video_curvepts
 include("visualization.jl")
+
+export
+    MergingEnvironment,
+    generate_merging_roadway
+include("environment.jl")
+
+export
+    CooperativeIDM
+include("cooperative_IDM.jl")
+
 
 end # End module

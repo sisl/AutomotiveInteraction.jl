@@ -266,7 +266,7 @@ test_jumpy_vehicle(segment_length = 50.,separation = 5.,
 """
 function test_jumpy_vehicle(;segment_length::Float64=100.,separation::Float64=2.,duration=10.,
         filename=joinpath(@__DIR__,"../julia_notebooks/media/jumpy_test.mp4"))
-    road_break = make_discont_roadway_curved(segment_length = segment_length,separation=separation)
+    road_break = make_discont_roadway_jagged(segment_length = segment_length,separation=separation)
     scene = Scene(500)
     push!(scene,Vehicle(VehicleState(VecSE2(0.,0.,0.),road_break,5.),VehicleDef(),1))
     models = Dict{Int64,DriverModel}()
