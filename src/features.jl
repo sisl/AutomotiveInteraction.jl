@@ -57,60 +57,6 @@ function get_neighbors(env::MergingEnvironment, scene::Scene, egoid::Int64)
 end
 
 """
-    dist_to_merge(env::MergingEnvironment, veh::Vehicle)
-returns the distance to the merge point.
-"""
-function dist_to_merge(env::MergingEnvironment, veh::Vehicle)
-    lane = get_lane(env.roadway, veh)
-    if lane == main_lane(env)
-        frenet_merge = get_frenet_relative_position(veh.state.posG, env.merge_index, env.roadway)
-        dist = frenet_merge.Δs
-    else
-        dist = veh.state.posF.s - get_end(lane) 
-    end
-    return dist
-end
-
-"""
-    time_to_merge(env::MergingEnvironment, veh::Vehicle, a::Float64 = 0.0)
-return the time to reach the merge point using constant acceleration prediction. 
-If the acceleration, `a` is not specified, it performs a constant velocity prediction.
-"""
-function time_to_merge(env::MergingEnvironment, veh::Vehicle, a::Float64 = 0.0)
-    d = -dist_to_merge(env, veh)
-    v = veh.state.v
-    t = Inf
-    if isapprox(a, 0) 
-        t =  d/veh.state.v 
-    else
-        delta = v^2 + 2.0*a*d
-        if delta < 0.0
-            t = Inf
-        else
-            t = (-v + sqrt(delta)) / a 
-        end
-        if t < 0.0
-            t = Inf
-        end
-    end
-    return t
-end
-
-"""
-    find_merge_vehicle(env::MergingEnvironment, scene::Scene)
-returns the id of the merging vehicle if there is a vehicle on the merge lane.
-"""
-function find_merge_vehicle(env::MergingEnvironment, scene::Scene)
-    for veh in scene 
-        lane = get_lane(env.roadway, veh)
-        if lane == merge_lane(env)
-            return veh
-        end
-    end
-    return nothing
-end
-
-"""
     constant_acceleration_prediction(env::MergingEnvironment, veh::Vehicle, acc::Float64, time::Float64, v_des::Float64)
 returns the state of vehicle `veh` after time `time` using a constant acceleration prediction. 
 
@@ -190,47 +136,4 @@ computes the distance to reach a velocity of 0. at constant acceleration `acc` i
 function braking_distance(v::Float64, t_coll::Float64, acc::Float64)
     brake_dist = v*t_coll + 0.5*acc*t_coll^2
     return brake_dist
-end
-
-"""
-    AutomotiveDrivingModels.propagate(veh::Entity{VehicleState,D,I}, action::LaneFollowingAccel, roadway::Roadway, ΔT::Float64, nobackup::Bool) where {D,I}
-A propagate method for `LaneFollowingAccel` that prevents the car from backing up in `nobackup = true`.
-"""
-function AutomotiveDrivingModels.propagate(veh::Entity{VehicleState,D,I}, action::LaneFollowingAccel, roadway::Roadway, ΔT::Float64, nobackup::Bool) where {D,I}
-
-    a_lon = action.a
-
-    ds = veh.state.v
-
-    ΔT² = ΔT*ΔT
-
-    Δs = ds*ΔT + 0.5*a_lon*ΔT²
-    v₂ = ds + a_lon*ΔT
-
-    if nobackup
-        Δs = max(Δs, 0.0)
-        v₂ = max(v₂, 0.0)
-    end
-
-    roadind = move_along(veh.state.posF.roadind, roadway, Δs)
-    posG = roadway[roadind].pos
-    posF = Frenet(roadind, roadway, t=veh.state.posF.t, ϕ=veh.state.posF.ϕ)
-    VehicleState(posG, posF, v₂)
-end
-
-function AutomotiveDrivingModels.tick!(
-    scene::EntityFrame{S,D,I},
-    roadway::R,
-    actions::Vector{A},
-    Δt::Float64,
-    nobackup::Bool
-    ) where {S,D,I,R,A}
-
-    for i in 1 : length(scene)
-        veh = scene[i]
-        state′ = propagate(veh, actions[i], roadway, Δt, nobackup)
-        scene[i] = Entity(state′, veh.def, veh.id)
-    end
-
-    return scene
 end

@@ -14,6 +14,8 @@ using Parameters
 export 
     keep_vehicle_subset!,
     make_def_models,
+    make_IDM_models,
+    make_cidm_models,
     make_TimLaneChanger_models,
     get_hallucination_scenes,
     run_vehicles,
@@ -54,12 +56,25 @@ include("visualization.jl")
 
 export
     MergingEnvironment,
-    generate_merging_roadway
+    main_lane,
+    merge_lane
 include("environment.jl")
 
 export
     CooperativeIDM
 include("cooperative_IDM.jl")
+
+export 
+    get_front_neighbor,
+    get_neighbors,
+    dist_to_merge,
+    time_to_merge,
+    find_merge_vehicle,
+    constant_acceleration_prediction,
+    distance_projection,
+    collision_time,
+    braking_distance
+include("features.jl")
 
 
 end # End module

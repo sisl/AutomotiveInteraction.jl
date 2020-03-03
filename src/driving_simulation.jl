@@ -102,7 +102,7 @@ function make_def_models(scene)
     models = Dict{Int64,DriverModel}()
     for veh in scene
         models[veh.id] = Tim2DDriver(INTERACTION_TIMESTEP,
-            mlane=MOBIL(INTERACTION_TIMESTEP,mlon=uncertain_IDM()))
+            mlane=MOBIL(INTERACTION_TIMESTEP,mlon=IntelligentDriverModel()))
     end
     return models
 end
@@ -125,6 +125,32 @@ function make_TimLaneChanger_models(scene)
     return models
 end
 
+
+"""
+    function make_IDM_models(scene)
+- Assign default parameter IDM to all vehicles in the scene
+"""
+function make_IDM_models(scene)
+    print("IDM models being made\n")
+    models=Dict{Int64,DriverModel}()
+    for veh in scene
+        models[veh.id] = IntelligentDriverModel()
+    end
+    return models
+end
+
+"""
+    function make_cidm_models(scene)
+- Assign cooperative IDM as driver model to all vehicles in the scene
+"""
+function make_cidm_models(scene)
+    print("c-IDM models being assigned to vehicles\n")
+    models = Dict{Int64,DriverModel}()
+    for veh in scene
+        models[veh.id] = CooperativeIDM()
+    end
+    return models
+end
 
 # function: get hallucination scenes
 """
@@ -189,7 +215,7 @@ function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename,traj,roadw
     scene_real = get_scene(start_frame,traj)
     if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
 
-    models = make_def_models(scene_real)
+    models = make_cidm_models(scene_real)
 
     scene_list = get_hallucination_scenes(scene_real,models=models,
         id_list=id_list,duration=duration,roadway=roadway)
@@ -273,5 +299,15 @@ function test_jumpy_vehicle(;segment_length::Float64=100.,separation::Float64=2.
     models[1] = Tim2DDriver(0.1)
     scene_list = get_hallucination_scenes(scene,roadway=road_break,models=models,duration=duration)
     scenelist2video_curvepts(scene_list,roadway=road_break,filename=filename)
+    return nothing
+end
+
+# callback: to log metrics during simulation
+@with_kw struct MetricsCallback
+    ego_a::Vector{Float64}
+end
+
+function AutomotiveDrivingModels.run_callback(callback::MetricsCallback)
+    push!(callback.ego_a,models.a.a_lon)
     return nothing
 end
