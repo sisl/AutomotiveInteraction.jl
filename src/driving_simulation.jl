@@ -147,7 +147,20 @@ function make_cidm_models(scene)
     print("c-IDM models being assigned to vehicles\n")
     models = Dict{Int64,DriverModel}()
     for veh in scene
-        models[veh.id] = CooperativeIDM()
+        models[veh.id] = CooperativeIDM(c=1.0)
+    end
+    return models
+end
+
+"""
+    function make_iidm_models(scene)
+- Assign intruder IDM as driver model to all vehicles in the scene
+"""
+function make_iidm_models(scene)
+    print("i-idm models being assigned to vehicles \n")
+    models = Dict{Int64,DriverModel}()
+    for veh in scene
+        models[veh.id] = IntruderIDM(idm=IntelligentDriverModel())
     end
     return models
 end
@@ -203,6 +216,7 @@ end
 - traj: Vehicle traj data stored in the `Trajdata` type provided by `AutomotiveDrivingModels.jl`
 - start_frame: Frame number of vehicle track data in `traj`
 - roadway: a roadway object eg: `roadway_interaction`
+- nomergeoverlay: If set to false then overlays the merge veh rays
 
 # Examples
 ```julia
@@ -210,7 +224,7 @@ run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway_interaction,
     filename=joinpath(@__DIR__,"julia_notebooks/media/run_test_ext_long.mp4"))
 ```
 """
-function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename,traj,roadway)
+function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename,traj,roadway,nomergeoverlay=true)
 
     scene_real = get_scene(start_frame,traj)
     if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
@@ -219,7 +233,13 @@ function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename,traj,roadw
 
     scene_list = get_hallucination_scenes(scene_real,models=models,
         id_list=id_list,duration=duration,roadway=roadway)
-    scenelist2video(scene_list,filename=filename,roadway=roadway)
+    
+    if nomergeoverlay
+        scenelist2video(scene_list,filename=filename,roadway=roadway)
+    else
+        print("Making merge overlay\n")
+        scenelist2video_mergeoverlay(scene_list,filename=filename,roadway=roadway)
+    end
     return nothing
 end
 
@@ -299,15 +319,5 @@ function test_jumpy_vehicle(;segment_length::Float64=100.,separation::Float64=2.
     models[1] = Tim2DDriver(0.1)
     scene_list = get_hallucination_scenes(scene,roadway=road_break,models=models,duration=duration)
     scenelist2video_curvepts(scene_list,roadway=road_break,filename=filename)
-    return nothing
-end
-
-# callback: to log metrics during simulation
-@with_kw struct MetricsCallback
-    ego_a::Vector{Float64}
-end
-
-function AutomotiveDrivingModels.run_callback(callback::MetricsCallback)
-    push!(callback.ego_a,models.a.a_lon)
     return nothing
 end

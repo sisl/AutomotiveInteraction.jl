@@ -80,3 +80,25 @@ function AutoViz.render!(rendermodel::RenderModel, overlay::LaneOverlay, scene::
     render!(rendermodel, overlay.lane, roadway, color_asphalt=overlay.color) # this display a lane with the specified color
     return rendermodel
 end
+
+"""
+    MergeOverlay
+
+- Draw line joining vehicle and its associated merge vehicle
+- Inspired by MergeNeighborsOverlay from AutonomousMerging.jl
+"""
+@with_kw mutable struct MergeOverlay <: SceneOverlay
+    env::MergingEnvironment = MergingEnvironment()
+end
+function AutoViz.render!(rendermodel::RenderModel, overlay::MergeOverlay,
+    scene::Scene, roadway::Roadway)
+    for veh in scene
+        ego_veh = veh
+        merge_veh = find_merge_vehicle(overlay.env,scene,veh)
+        if merge_veh != nothing
+            A = get_front(ego_veh)
+            B = get_rear(merge_veh)
+            add_instruction!(rendermodel, render_line_segment, (A.x, A.y, B.x, B.y, colorant"blue", 0.5))
+        end
+    end
+end

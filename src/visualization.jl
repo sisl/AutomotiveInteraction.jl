@@ -114,3 +114,22 @@ function scenelist2video_curvepts(scene_list;id_list=[],roadway,filename)
     write(filename,frames)
     return nothing
 end
+
+
+function scenelist2video_mergeoverlay(scene_list;id_list=[],roadway,filename)
+    frames = Frames(MIME("image/png"),fps = 10)
+    env = MergingEnvironment()
+    # Loop over list of scenes and convert to video
+    for i in 1:length(scene_list)
+        if !isempty(id_list) keep_vehicle_subset!(scene_list[i],id_list) end
+        scene_visual = render(scene_list[i],roadway,
+        [IDOverlay(),TextOverlay(text=["frame=$(i)"],font_size=12),MergeOverlay(env)],
+        cam=FitToContentCamera(0.),
+        #cam = SceneFollowCamera(10.)
+        )
+        push!(frames,scene_visual)
+    end
+    print("Making video filename: $(filename)\n")
+    write(filename,frames)
+    return nothing
+end

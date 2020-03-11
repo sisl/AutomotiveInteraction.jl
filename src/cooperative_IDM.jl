@@ -13,18 +13,12 @@ the car follows the IntelligentDriverModel.
     - `env::MergingEnvironment = MergingEnvironment(main_lane_angle = 0.0, merge_lane_angle = pi/6)` the merging environment
     - `idm::IntelligentDriverModel = IntelligentDriverModel(v_des = env.main_lane_vmax, d_cmf = 2.0, d_max=2.0, T = 1.5, s_min = 2.0, a_max = 2.0)` the default IDM
     - `c::Float64 = 0.0` the cooperation level
-    - `fov::Float64 = 20.0` [m] A field of view, the merging vehicle is not considered if it is further than `fov`
 """
 @with_kw mutable struct CooperativeIDM <: DriverModel{LaneFollowingAccel}
     env::MergingEnvironment = MergingEnvironment(merge_point = VecSE2(1064.5227,959.1559,-2.8938))
-    idm::IntelligentDriverModel = IntelligentDriverModel(v_des = 15., 
-                                                         d_cmf = 2.0, 
-                                                         d_max=2.0,
-                                                         T = 1.5,
-                                                         s_min = 2.0,
-                                                         a_max = 2.0)
+    idm::IntelligentDriverModel = IntelligentDriverModel(v_des = 15., d_cmf = 2.0, d_max=2.0,
+                                                         T = 1.5,s_min = 2.0,a_max = 2.0)
     c::Float64 = 0.0 # cooperation level
-    fov::Float64 = 20.0 # when to consider merge car
     # internals
     a::Float64 = 0.0
     a_merge::Float64 = 0.0
@@ -55,26 +49,30 @@ end
 
 function AutomotiveDrivingModels.observe!(model::CooperativeIDM, scene::Scene, roadway::Roadway, egoid::Int64)
     ego_ind = findfirst(egoid, scene)
-    print("ego_id = $(egoid) says: OBSERVE COOPERATIVE IDM \n")
+    print("---ego_id = $(egoid) \n")
     ego = scene[ego_ind]
-    fore = get_neighbor_fore_along_lane(scene, ego_ind, roadway, VehicleTargetPointFront(), VehicleTargetPointRear(), VehicleTargetPointFront())
-    if fore.ind == nothing # uses the first vehicle on the lain as neighbor
+    # fore = get_neighbor_fore_along_lane(scene, ego_ind, roadway, VehicleTargetPointFront(), VehicleTargetPointRear(), VehicleTargetPointFront())
+    # if fore.ind == nothing # uses the first vehicle on the lain as neighbor
 
-        vehmin, vehind = findfirst_lane(scene, main_lane(model.env))
-        headway = get_end(main_lane(model.env)) - ego.state.posF.s + vehmin.state.posF.s
-        track_longitudinal!(model.idm, ego.state.v, vehmin.state.v, headway)
-        print("No neighbor, ID: %d | neighbor %d | headway %2.1f \n", egoid, scene[vehind].id, headway)
-    else
-        # @printf("ID: %d | neighbor %d \n", egoid, scene[fore.ind].id)
-        observe!(model.idm, scene, roadway, egoid)
-    end
+    #     vehmin, vehind = findfirst_lane(scene, main_lane(model.env))
+    #     headway = get_end(main_lane(model.env)) - ego.state.posF.s + vehmin.state.posF.s
+    #     track_longitudinal!(model.idm, ego.state.v, vehmin.state.v, headway)
+    #     print("Nobody in front\n")
+    # else
+    #     # @printf("ID: %d | neighbor %d \n", egoid, scene[fore.ind].id)
+    #     print("Front veh id = $(scene[fore.ind].id)\n")
+    #     observe!(model.idm, scene, roadway, egoid)
+    # end
+
+    observe!(model.idm,scene,roadway,egoid)
     a_idm = model.idm.a
     model.a_idm = a_idm 
     veh = find_merge_vehicle(model.env, scene,ego)
-    if veh == nothing || veh.state.posF.s < model.fov
-        println("No merge vehicle")
+    if veh == nothing
+        #println("No merge vehicle")
         model.a = model.a_idm
     else
+        print("Ahaaa: There is a merge veh bros. merge veh id =$(veh.id)\n")
         model.other_acc = 0.0
         model.a = 0.0
         model.a
@@ -109,6 +107,37 @@ function AutomotiveDrivingModels.observe!(model::CooperativeIDM, scene::Scene, r
     return model
 end
 
+
+function find_merge_vehicle(env::MergingEnvironment, scene::Scene,ego_veh)
+    ego_lane = get_lane(env.roadway,ego_veh)
+    ego_lane_tag = ego_lane.tag # Let's use tag as I think it'll be faster to compare equality than entire lane
+    ego_ttm = time_to_merge(env,ego_veh,0.)
+    merge_lane_tag = LaneTag(0,0)
+        # Depending on the ego vehicle lane, decide whether merge lane is a or b1
+    if ego_lane_tag == LaneTag(1,1) # Check if ego veh is on lane a
+        merge_lane_tag = LaneTag(1,2)
+    elseif ego_lane_tag == LaneTag(1,2)
+        merge_lane_tag = LaneTag(1,1)
+    end
+
+    diff_ttm = 10000
+    merge_veh = nothing
+    for veh in scene
+        lane = get_lane(env.roadway,veh)
+        if lane.tag == merge_lane_tag
+            veh_ttm = time_to_merge(env,veh,0.)
+            diff_ttm_temp = abs(veh_ttm-ego_ttm)
+            print("merger vehicle id = $(veh.id)\n")
+            if diff_ttm_temp < diff_ttm
+                diff_ttm = diff_ttm_temp
+                merge_veh = veh
+            end
+        end
+    end
+    return merge_veh
+end
+
+
 """
     findfirst_lane(scene::Scene, lane::Lane)
 find the first vehicle on the lane (in terms of longitudinal position)
@@ -135,41 +164,6 @@ function get_end(lane::Lane)
     return lane.curve[end].s
 end
 
-"""
-    find_merge_vehicle(env::MergingEnvironment, scene::Scene)
-returns the id of the merging vehicle if there is a vehicle on the merge lane.
-"""
-function find_merge_vehicle(env::MergingEnvironment, scene::Scene,ego_veh)
-    ego_lane = get_lane(env.roadway,ego_veh)
-    ego_lane_tag = ego_lane.tag # Let's use tag as I think it'll be faster to compare equality than entire lane
-    merge_lane_tag = LaneTag(0,0)
-        # Depending on the ego vehicle lane, decide whether merge lane is a or b1
-    if ego_lane_tag == LaneTag(1,1) # Check if ego veh is on lane a
-        merge_lane_tag = LaneTag(1,2)
-    elseif ego_lane_tag == LaneTag(1,2)
-        merge_lane_tag = LaneTag(1,1)
-    end
-
-    min_dist_to_merge = 10
-    dist_to_merge_threshold = 10
-    merge_veh = Vehicle(VehicleState(),VehicleDef(),111)
-    for veh in scene
-        lane = get_lane(env.roadway, veh)
-        if lane.tag == merge_lane_tag
-            d = -dist_to_merge(env,veh)
-            if d < min_dist_to_merge
-                min_dist_to_merge = d
-                merge_veh = veh
-            end
-        end
-    end
-        # If there is a vehicle less than 10m away from merge point, worry about it otherwise chill
-    if min_dist_to_merge < dist_to_merge_threshold
-        return merge_veh
-    end
-
-    return nothing
-end
 
 """
     time_to_merge(env::MergingEnvironment, veh::Vehicle, a::Float64 = 0.0)
@@ -202,12 +196,20 @@ returns the distance to the merge point.
 """
 function dist_to_merge(env::MergingEnvironment, veh::Vehicle)
     lane = get_lane(env.roadway, veh)
-    #if lane == main_lane(env)
-    #    frenet_merge = get_frenet_relative_position(veh.state.posG, env.merge_index, env.roadway)
-    #    dist = frenet_merge.Δs
-    #else
-        # No need for if else because lanes inevitably end at the merge point
-        dist = veh.state.posF.s - get_end(lane)
-    #end
+    dist = veh.state.posF.s - get_end(lane)
     return dist
+end
+
+"""
+    distance_projection(env::MergingEnvironment, veh::Vehicle)
+Performs a projection of `veh` onto the main lane. It returns the longitudinal position of the projection of `veh` on the main lane. 
+The projection is computing by conserving the distance to the merge point.
+"""
+function distance_projection(env::MergingEnvironment, veh::Vehicle)
+    if get_lane(env.roadway, veh) == main_lane(env)
+        return veh.state.posF.s 
+    else
+        dm = -dist_to_merge(env, veh)
+        return env.roadway[env.merge_index].s - dm
+    end
 end

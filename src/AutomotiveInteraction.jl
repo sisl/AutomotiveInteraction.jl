@@ -5,10 +5,11 @@ module AutomotiveInteraction
 
 using AutomotiveDrivingModels
 using AutoViz
-using DataFrames
 using Records
-using DelimitedFiles
 using Reel
+
+using DataFrames
+using DelimitedFiles
 using Parameters
 
 export 
@@ -16,6 +17,7 @@ export
     make_def_models,
     make_IDM_models,
     make_cidm_models,
+    make_iidm_models,
     make_TimLaneChanger_models,
     get_hallucination_scenes,
     run_vehicles,
@@ -61,20 +63,13 @@ export
 include("environment.jl")
 
 export
-    CooperativeIDM
+    CooperativeIDM,
+    find_merge_vehicle
 include("cooperative_IDM.jl")
 
-export 
-    get_front_neighbor,
-    get_neighbors,
-    dist_to_merge,
-    time_to_merge,
-    find_merge_vehicle,
-    constant_acceleration_prediction,
-    distance_projection,
-    collision_time,
-    braking_distance
-include("features.jl")
-
+export
+    MergeOverlay,
+    render!
+include("overlays.jl")
 
 end # End module
