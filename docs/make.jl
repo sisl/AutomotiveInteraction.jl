@@ -7,6 +7,6 @@ makedocs(
     format = Documenter.HTML()
     )
 
-#deploydocs(
-#    repo = "github.com/sisl/AutomotiveInteraction.jl.git"
-#    )
+deploydocs(
+    repo = "github.com/sisl/AutomotiveInteraction.jl.git"
+    )
