@@ -1,4 +1,8 @@
-# AutomotiveInteraction
+# AutomotiveInteraction.jl
+
+[![Build Status](https://travis-ci.org/sisl/AutomotiveInteraction.jl.svg?branch=master)](https://travis-ci.org/sisl/AutomotiveInteraction.jl)
+[![Coverage Status](https://coveralls.io/repos/github/sisl/AutomotiveInteraction.jl/badge.svg?branch=master)](https://coveralls.io/github/sisl/AutomotiveInteraction.jl?branch=master)
+
 Driver modeling using the Interaction dataset
 
 ## Getting started
