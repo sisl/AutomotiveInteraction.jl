@@ -375,3 +375,181 @@ function show_lane_overlays(road_ext::Roadway,traj_ext)
     scene = get_scene(1,traj_ext)
     return render(scene,road_ext,[lo_a,lo_b1,lo_b2,lo_c,lo_d])
 end
+
+
+"""
+Tweak roadway render function to avoid showing lane ending for top and 
+    bottom merge lanes
+
+This overwrites the render! function from AutoViz that creates 
+a roadway rendering rendermodel
+
+Steps:
+- Had to copy file called colorscheme.jl from AutoViz
+
+# Example
+```julia
+using AutoViz
+road_ext = make_roadway_interaction_with_extensions()
+render(road_ext)
+```
+"""
+function AutoViz.render!(rendermodel::RenderModel, roadway::Roadway;
+    color_asphalt       :: Colorant=_colortheme["COLOR_ASPHALT"],
+    lane_marking_width  :: Real=0.15, # [m]
+    lane_dash_len       :: Real=1.0, # [m]
+    lane_dash_spacing   :: Real=2.0, # [m]
+    lane_dash_offset    :: Real=0.00  # [m]
+    )
+    print("Tweaked render function being called \n")
+    # render the asphalt between the leftmost and rightmost lane markers
+    for seg in roadway.segments
+        if !isempty(seg.lanes)
+            laneR = seg.lanes[1]
+            laneL = seg.lanes[end]
+
+            pts = Array{Float64}(undef, 2, length(laneL.curve) + has_next(laneL) +
+                                        length(laneR.curve) + has_next(laneR) +
+                                        2*length(seg.lanes))
+            pts_index = 0
+            for pt in laneL.curve
+                edgept = pt.pos + polar(laneL.width/2, pt.pos.θ + π/2)
+                pts_index += 1
+                pts[1, pts_index] = edgept.x
+                pts[2, pts_index] = edgept.y
+            end
+            if has_next(laneL)
+                pt = next_lane_point(laneL, roadway)
+                edgept = pt.pos + polar(laneL.width/2, pt.pos.θ + π/2)
+                pts_index += 1
+                pts[1, pts_index] = edgept.x
+                pts[2, pts_index] = edgept.y
+            end
+            for i in reverse(1:length(seg.lanes))
+                lane = seg.lanes[i]
+                if has_next(lane)
+                    pt = next_lane_point(lane, roadway).pos
+                else
+                    pt = lane.curve[end].pos
+                end
+                pts_index += 1
+                pts[1, pts_index] = pt.x
+                pts[2, pts_index] = pt.y
+            end
+
+            if has_next(laneR)
+                pt = next_lane_point(laneR, roadway)
+                edgept = pt.pos + polar(laneR.width/2, pt.pos.θ - π/2)
+                pts_index += 1
+                pts[1, pts_index] = edgept.x
+                pts[2, pts_index] = edgept.y
+            end
+            for j in length(laneR.curve) : -1 : 1
+                pt = laneR.curve[j]
+                edgept = pt.pos + polar(laneR.width/2, pt.pos.θ - π/2)
+                pts_index += 1
+                pts[1, pts_index] = edgept.x
+                pts[2, pts_index] = edgept.y
+            end
+            for i in 1:length(seg.lanes)
+                lane = seg.lanes[i]
+                pt = lane.curve[1].pos
+                pts_index += 1
+                pts[1, pts_index] = pt.x
+                pts[2, pts_index] = pt.y
+            end
+
+            add_instruction!(rendermodel, render_fill_region, (pts, color_asphalt))
+        end
+        # for lane in seg.lanes
+        #     render!(rendermodel, lane, roadway)
+        # end
+    end
+
+    # render the lane edges
+    for seg in roadway.segments
+        for lane in seg.lanes
+            if lane.tag == LaneTag(1,1)
+                # This is the top merge lane i.e. lane a. Make dashed line cut short
+                curve_tweak = lane.curve[1:end-40]
+                N = length(curve_tweak)
+                halfwidth = lane.width/2
+
+                pts_left = Array{Float64}(undef, 2, N)
+
+                for (i,pt) in enumerate(curve_tweak)
+                    p_left = pt.pos + polar(halfwidth, pt.pos.θ + π/2)
+                    pts_left[1,i] = p_left.x
+                    pts_left[2,i] = p_left.y
+                end
+
+                render!(rendermodel, lane.boundary_left, pts_left, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
+
+            elseif lane.tag == LaneTag(4,1)
+                # This is the bottom merge lane i.e. lane g maybe. Make dashed line cut short
+                print("Bottom merge lane")
+                curve_tweak = lane.curve[1:end-80]
+                N = length(curve_tweak)
+                halfwidth = lane.width/2
+
+                pts_left = Array{Float64}(undef, 2, N)
+
+                for (i,pt) in enumerate(curve_tweak)
+                    p_left = pt.pos + polar(halfwidth, pt.pos.θ + π/2)
+                    pts_left[1,i] = p_left.x
+                    pts_left[2,i] = p_left.y
+                end
+
+                render!(rendermodel, lane.boundary_left, pts_left, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
+
+            else
+                
+                N = length(lane.curve)
+                halfwidth = lane.width/2
+
+                # always render the left lane marking
+                pts_left = Array{Float64}(undef, 2, N)
+                
+                for (i,pt) in enumerate(lane.curve)
+                    
+                    p_left = pt.pos + polar(halfwidth, pt.pos.θ + π/2)
+
+                    pts_left[1,i] = p_left.x
+                    pts_left[2,i] = p_left.y
+                end
+                if has_next(lane)
+                    lane2 = next_lane(lane, roadway)
+                    pt = lane2.curve[1]
+                    p_left = pt.pos + polar(lane2.width/2, pt.pos.θ + π/2)
+                    pts_left = hcat(pts_left, [p_left.x, p_left.y])
+                end
+
+                render!(rendermodel, lane.boundary_left, pts_left, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
+
+                # only render the right lane marking if this is the first lane
+                if lane.tag.lane == 1
+                    pts_right = Array{Float64}(undef, 2, N)
+
+                    for (i,pt) in enumerate(lane.curve)
+                    
+                        p_right = pt.pos - polar(halfwidth, pt.pos.θ + π/2)
+
+                        pts_right[1,i] = p_right.x
+                        pts_right[2,i] = p_right.y
+                    end
+
+                    if has_next(lane)
+                        lane2 = next_lane(lane, roadway)
+                        pt = lane2.curve[1]
+                        p_right = pt.pos - polar(lane2.width/2, pt.pos.θ + π/2)
+                        pts_right = hcat(pts_right, [p_right.x, p_right.y])
+                    end
+
+                    render!(rendermodel, lane.boundary_right, pts_right, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
+                end
+            end # Ends the if else to check whether merging lane
+        end
+    end
+
+    return rendermodel
+end

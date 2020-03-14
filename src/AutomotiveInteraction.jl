@@ -36,7 +36,8 @@ export
     make_roadway_ngsim,
     make_roadway_interaction_with_extensions,
     make_discont_roadway_straight,
-    make_discont_roadway_jagged
+    make_discont_roadway_jagged,
+    render!
 include("roadway_building.jl")
 
 export 
@@ -72,4 +73,6 @@ export
     render!
 include("overlays.jl")
 
+    # To be able to tweak the render function
+include("colorscheme.jl")
 end # End module
