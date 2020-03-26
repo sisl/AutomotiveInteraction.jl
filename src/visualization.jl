@@ -12,8 +12,8 @@ render(scene,roadway_interaction)
 ```
 """
 function get_scene(framenum::Int64,traj=traj_interaction)
-    scene = Scene(500)
-    get!(scene,traj,framenum)
+    scene = Scene(Entity,500)
+    get!(scene,traj,framenum) # This is defined in veh_track_reading.jl
     return scene
 end
 

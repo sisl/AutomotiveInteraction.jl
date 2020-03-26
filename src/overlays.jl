@@ -6,16 +6,18 @@ Overlaying hallucinated trajectory on the ground truth
 - `color::Colorant`
 - `scene::Scene`
 """
-struct my_overlay <: SceneOverlay
+struct my_overlay
     scene::Scene
-    color # Needs to be of form colorant"Colorname"
+    color::Colorant # Needs to be of form colorant"Colorname"
 end
 
-function AutoViz.render!(rendermodel::RenderModel,overlay::my_overlay, 
-        scene::Scene, roadway::Roadway)
-    AutoViz.render!(rendermodel,overlay.scene,car_color = overlay.color)
+function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel,
+     overlay::my_overlay)
+    add_renderable!(rendermodel, overlay.scene, 
+    car_color=overlay.color)
     return rendermodel
 end
+
 
 """
     curve_pts_overlay
@@ -28,13 +30,14 @@ Displays circles at the curve points that constitute the lanes of a road:
 render(scene,road,[curvepts_overlay(roadway_ext,colorant"yellow",0.05)])
 ```
 """ 
-struct curvepts_overlay <: SceneOverlay
+struct curvepts_overlay
     roadway
     color::Colorant # eg: colorant"yellow"
     size::Float64
 end
 
-function AutoViz.render!(rendermodel::RenderModel, overlay::curvepts_overlay, scene::Frame{Entity{S,D,I}}, roadway::R) where {S,D,I,R}
+function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel,
+     overlay::curvepts_overlay, scene::Scene, roadway::R) where {S,D,I,R}
     
     num_segments = length(roadway.segments)
     
@@ -71,12 +74,13 @@ lane_overlay = LaneOverlay(roadway[LaneTag(1,1)], RGBA(0.0,0.0,1.0,0.5))
 render(scene, roadway, [lane_overlay], cam=FitToContentCamera(0.))
 ```
 """
-struct LaneOverlay <: SceneOverlay
+struct LaneOverlay
     lane::Lane
     color::Colorant
 end
 
-function AutoViz.render!(rendermodel::RenderModel, overlay::LaneOverlay, scene::Scene, roadway::Roadway)
+function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel,
+     overlay::LaneOverlay, scene::Scene, roadway::Roadway)
     render!(rendermodel, overlay.lane, roadway, color_asphalt=overlay.color) # this display a lane with the specified color
     return rendermodel
 end
@@ -87,11 +91,11 @@ end
 - Draw line joining vehicle and its associated merge vehicle
 - Inspired by MergeNeighborsOverlay from AutonomousMerging.jl
 """
-@with_kw mutable struct MergeOverlay <: SceneOverlay
+@with_kw mutable struct MergeOverlay
     env::MergingEnvironment = MergingEnvironment()
 end
-function AutoViz.render!(rendermodel::RenderModel, overlay::MergeOverlay,
-    scene::Scene, roadway::Roadway)
+function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel,
+     overlay::MergeOverlay,scene::Scene, roadway::Roadway)
     for veh in scene
         ego_veh = veh
         merge_veh = find_merge_vehicle(overlay.env,scene,veh)

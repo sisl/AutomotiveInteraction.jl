@@ -62,7 +62,7 @@ tdraw = INTERACTIONTrajdata("vehicle_tracks_000.csv")
 nframes(tdraw)
 ```
 """
-Records.nframes(trajdata::INTERACTIONTrajdata) = maximum(keys(trajdata.frame2cars))
+nframes(trajdata::INTERACTIONTrajdata) = maximum(keys(trajdata.frame2cars))
 
 # function: carsinframe for memory allocation
 """
@@ -105,6 +105,49 @@ function car_df_index(trajdata::INTERACTIONTrajdata, carid::Int, frame::Int)
     end
 
     retval
+end
+
+# Somethings from Records.jl that are used in read_veh_tracks
+struct RecordFrame
+    lo::Int
+    hi::Int
+end
+
+struct RecordState{S,I}
+    state::S
+    id::I
+end
+
+mutable struct ListRecord{S,D,I} # State, Definition, Identification
+    timestep::Float64
+    frames::Vector{RecordFrame}
+    states::Vector{RecordState{S,I}}
+    defs::Dict{I, D}
+end
+ListRecord(timestep::Float64, ::Type{S}, ::Type{D}, ::Type{I}=Int) where {S,D,I} = ListRecord{S,D,I}(timestep, RecordFrame[], RecordState{S}[], Dict{I,D}())
+
+nframes(rec::ListRecord) = length(rec.frames)
+frame_inbounds(rec::ListRecord, frame_index::Int) = 1 ≤ frame_index ≤ nframes(rec)
+
+get_def(rec::ListRecord{S,D,I}, id::I) where {S,D,I} = rec.defs[id]
+
+function Base.get(rec::ListRecord, stateindex::Int)
+    recstate = rec.states[stateindex]
+    return Entity(recstate.state, get_def(rec, recstate.id), recstate.id)
+end
+
+function Base.get!(frame::Scene, rec::ListRecord{S,D,I}, frame_index::Int) where {S,D,I}
+
+    empty!(frame)
+
+    if frame_inbounds(rec, frame_index)
+        recframe = rec.frames[frame_index]
+        for stateindex in recframe.lo : recframe.hi
+            push!(frame, get(rec, stateindex))
+        end
+    end
+
+    return frame
 end
 
 # function: read vehicle tracks from provided csv file into object called `traj_interaction`
@@ -161,6 +204,6 @@ function read_veh_tracks(;roadway)
     
     # Trajdata is defined in AutomotiveDrivingModels.jl/states/trajdatas.jl. It is a ListRecord
     # from Records.jl. Its utility is storing a list of scenes
-    traj_interaction = Trajdata(INTERACTION_TIMESTEP, frames, states, vehdefs)
+    traj_interaction = ListRecord(INTERACTION_TIMESTEP, frames, states, vehdefs)
     return traj_interaction
 end

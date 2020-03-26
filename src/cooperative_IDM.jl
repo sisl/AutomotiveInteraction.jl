@@ -33,7 +33,7 @@ the car follows the IntelligentDriverModel.
 end
 
 Base.rand(model::CooperativeIDM) = LaneFollowingAccel(model.a)
-function AutomotiveDrivingModels.reset_hidden_state!(model::CooperativeIDM)
+function AutomotiveSimulator.reset_hidden_state!(model::CooperativeIDM)
     reset_hidden_state!(model.idm)
     model.a = 0.0
     model.a_merge = 0.0
@@ -43,11 +43,11 @@ function AutomotiveDrivingModels.reset_hidden_state!(model::CooperativeIDM)
     model.dist_at_merge = 0.0
 end
 
-function AutomotiveDrivingModels.set_desired_speed!(model::CooperativeIDM, vdes::Float64)
+function AutomotiveSimulator.set_desired_speed!(model::CooperativeIDM, vdes::Float64)
     set_desired_speed!(model.idm, vdes)
 end
 
-function AutomotiveDrivingModels.observe!(model::CooperativeIDM, scene::Scene, roadway::Roadway, egoid::Int64)
+function AutomotiveSimulator.observe!(model::CooperativeIDM, scene::Scene, roadway::Roadway, egoid::Int64)
     ego_ind = findfirst(egoid, scene)
     print("---ego_id = $(egoid) \n")
     ego = scene[ego_ind]
@@ -170,7 +170,7 @@ end
 return the time to reach the merge point using constant acceleration prediction. 
 If the acceleration, `a` is not specified, it performs a constant velocity prediction.
 """
-function time_to_merge(env::MergingEnvironment, veh::Vehicle, a::Float64 = 0.0)
+function time_to_merge(env::MergingEnvironment, veh::Entity, a::Float64 = 0.0)
     d = -dist_to_merge(env, veh)
     v = veh.state.v
     t = Inf
@@ -194,7 +194,7 @@ end
     dist_to_merge(env::MergingEnvironment, veh::Vehicle)
 returns the distance to the merge point.
 """
-function dist_to_merge(env::MergingEnvironment, veh::Vehicle)
+function dist_to_merge(env::MergingEnvironment, veh::Entity)
     lane = get_lane(env.roadway, veh)
     dist = veh.state.posF.s - get_end(lane)
     return dist
@@ -205,7 +205,7 @@ end
 Performs a projection of `veh` onto the main lane. It returns the longitudinal position of the projection of `veh` on the main lane. 
 The projection is computing by conserving the distance to the merge point.
 """
-function distance_projection(env::MergingEnvironment, veh::Vehicle)
+function distance_projection(env::MergingEnvironment, veh::Entity)
     if get_lane(env.roadway, veh) == main_lane(env)
         return veh.state.posF.s 
     else

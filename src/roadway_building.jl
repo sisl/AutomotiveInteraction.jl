@@ -394,7 +394,7 @@ road_ext = make_roadway_interaction_with_extensions()
 render(road_ext)
 ```
 """
-function AutoViz.render!(rendermodel::RenderModel, roadway::Roadway;
+function render!(rendermodel::RenderModel, roadway::Roadway;
     color_asphalt       :: Colorant=_colortheme["COLOR_ASPHALT"],
     lane_marking_width  :: Real=0.15, # [m]
     lane_dash_len       :: Real=1.0, # [m]

@@ -3,9 +3,8 @@
 # using AutomotiveInteraction
 module AutomotiveInteraction
 
-using AutomotiveDrivingModels
-using AutoViz
-using Records
+using AutomotiveSimulator
+using AutomotiveVisualization
 using Reel
 
 using DataFrames
@@ -69,10 +68,7 @@ export
 include("cooperative_IDM.jl")
 
 export
-    MergeOverlay,
-    render!
+    MergeOverlay
 include("overlays.jl")
 
-    # To be able to tweak the render function
-include("colorscheme.jl")
 end # End module

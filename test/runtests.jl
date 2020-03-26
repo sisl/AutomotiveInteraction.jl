@@ -3,8 +3,8 @@
 using Revise
 using Test
 using AutomotiveInteraction
-using AutomotiveDrivingModels
-using AutoViz
+using AutomotiveSimulator
+using AutomotiveVisualization
 
     # Make the roadway both without and with extension, and read vehicle tracks
 roadway_no_ext = make_roadway_interaction();
