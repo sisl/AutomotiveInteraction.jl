@@ -11,6 +11,8 @@ using DataFrames
 using DelimitedFiles
 using Parameters
 
+AutomotiveVisualization.set_render_mode(:fancy)
+
 export 
     keep_vehicle_subset!,
     make_def_models,

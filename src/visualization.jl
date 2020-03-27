@@ -1,24 +1,3 @@
-# function: get scene from trajdata
-"""
-    function get_scene(framenum::Int64,traj)
-
-Get a specific scene from trajdata
-
-# Example:
-```julia
-scene = Scene(500)
-scene = get_scene(1,traj_interaction)
-render(scene,roadway_interaction)
-```
-"""
-function get_scene(framenum::Int64,traj=traj_interaction)
-    scene = Scene(Entity,500)
-    get!(scene,traj,framenum) # This is defined in veh_track_reading.jl
-    return scene
-end
-
-
-# function: replay traj_data video
 """
     function video_trajdata_replay
 
@@ -26,25 +5,20 @@ Makes a video of the trajdata taking frame range as input
 
 # Example
 ```julia
-video_trajdata_replay(range=1:100,roadway=roadway,traj=traj_interaction,
+video_trajdata_replay(range=1:100,roadway=roadway,trajdata=traj_interaction,
     filename=joinpath(@__DIR__,"../julia_notebooks/media/replay_vid.mp4")
 ```
 """
-function video_trajdata_replay(id_list = [];range=nothing,traj,roadway,filename)
+function video_trajdata_replay(id_list = [];range=nothing,trajdata,roadway,filename)
 
     frames = Frames(MIME("image/png"), fps=10)
-    scene = Scene(500)
+    
     for i in range
-        temp_scene = get_scene(i,traj)
+        temp_scene = trajdata[i]
         if !isempty(id_list) keep_vehicle_subset!(temp_scene,id_list) end
         
-        scene_visual = render(temp_scene, 
-            roadway,
-            #[IDOverlay(colorant"white",12),TextOverlay(text=["frame=$(i)"],font_size=12)],
-            #cam=SceneFollowCamera(10.),
-            cam=FitToContentCamera(0.),
-            #canvas_width = 2250,
-        )
+        scene_visual = render([roadway,temp_scene])
+            
         push!(frames,scene_visual)
     end
     write(filename,frames)
