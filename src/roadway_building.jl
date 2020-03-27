@@ -376,32 +376,32 @@ function show_lane_overlays(road_ext::Roadway,traj_ext)
     return render(scene,road_ext,[lo_a,lo_b1,lo_b2,lo_c,lo_d])
 end
 
-
+# Special rendering to avoid lane boundary go till end
 """
-Tweak roadway render function to avoid showing lane ending for top and 
-    bottom merge lanes
-
-This overwrites the render! function from AutoViz that creates 
-a roadway rendering rendermodel
-
-Steps:
-- Had to copy file called colorscheme.jl from AutoViz
+struct MergingRoadway
+- Wrapper around a roadway for special rendering avoiding lane boundary wierd in merge
 
 # Example
 ```julia
-using AutoViz
 road_ext = make_roadway_interaction_with_extensions()
-render(road_ext)
+roadway = MergingRoadway(road_ext)
+render([roadway])
 ```
 """
-function render!(rendermodel::RenderModel, roadway::Roadway;
-    color_asphalt       :: Colorant=_colortheme["COLOR_ASPHALT"],
-    lane_marking_width  :: Real=0.15, # [m]
-    lane_dash_len       :: Real=1.0, # [m]
-    lane_dash_spacing   :: Real=2.0, # [m]
-    lane_dash_offset    :: Real=0.00  # [m]
-    )
-    print("Tweaked render function being called \n")
+struct MergingRoadway
+    roadway::Roadway
+end
+
+function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel,
+    mr::MergingRoadway)
+    print("This is the (still code copied) rendering for merging lane boundary")
+    lane_marking_width=0.15
+    lane_dash_len=1.0
+    lane_dash_spacing=2.0
+    lane_dash_offset=0.00
+    color_asphalt = colorant"0x708090"
+    roadway = mr.roadway
+
     # render the asphalt between the leftmost and rightmost lane markers
     for seg in roadway.segments
         if !isempty(seg.lanes)
@@ -483,11 +483,10 @@ function render!(rendermodel::RenderModel, roadway::Roadway;
                     pts_left[2,i] = p_left.y
                 end
 
-                render!(rendermodel, lane.boundary_left, pts_left, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
+                add_renderable!(rendermodel, lane.boundary_left, pts_left, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
 
             elseif lane.tag == LaneTag(4,1)
                 # This is the bottom merge lane i.e. lane g maybe. Make dashed line cut short
-                print("Bottom merge lane")
                 curve_tweak = lane.curve[1:end-80]
                 N = length(curve_tweak)
                 halfwidth = lane.width/2
@@ -500,7 +499,7 @@ function render!(rendermodel::RenderModel, roadway::Roadway;
                     pts_left[2,i] = p_left.y
                 end
 
-                render!(rendermodel, lane.boundary_left, pts_left, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
+                add_renderable!(rendermodel, lane.boundary_left, pts_left, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
 
             else
                 
@@ -524,7 +523,7 @@ function render!(rendermodel::RenderModel, roadway::Roadway;
                     pts_left = hcat(pts_left, [p_left.x, p_left.y])
                 end
 
-                render!(rendermodel, lane.boundary_left, pts_left, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
+                add_renderable!(rendermodel, lane.boundary_left, pts_left, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
 
                 # only render the right lane marking if this is the first lane
                 if lane.tag.lane == 1
@@ -545,7 +544,7 @@ function render!(rendermodel::RenderModel, roadway::Roadway;
                         pts_right = hcat(pts_right, [p_right.x, p_right.y])
                     end
 
-                    render!(rendermodel, lane.boundary_right, pts_right, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
+                    add_renderable!(rendermodel, lane.boundary_right, pts_right, lane_marking_width, lane_dash_len, lane_dash_spacing, lane_dash_offset)
                 end
             end # Ends the if else to check whether merging lane
         end

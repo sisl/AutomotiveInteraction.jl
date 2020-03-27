@@ -38,7 +38,8 @@ export
     make_roadway_interaction_with_extensions,
     make_discont_roadway_straight,
     make_discont_roadway_jagged,
-    render!
+    MergingRoadway,
+    add_renderable!
 include("roadway_building.jl")
 
 export 
@@ -48,8 +49,7 @@ export
     read_veh_tracks
 include("veh_track_reading.jl")
 
-export 
-    get_scene,
+export
     video_trajdata_replay,
     scenelist2video,
     curvepts_overlay,
