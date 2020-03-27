@@ -120,6 +120,10 @@ end
 ```julia
 road_ext = make_interaction_roadway_with_extensions()
 trajdata = read_veh_tracks(roadway=road_ext)
+
+# Then access a certain framenumber from the trajdata by
+scene = trajdata[1]
+render([road_ext,scene,IDOverlay(scene=scene)])
 ```
 """
 function read_veh_tracks(;roadway)
@@ -139,22 +143,20 @@ function read_veh_tracks(;roadway)
 
     # Fill in the vehicle state information in terms of x,y and speed
     for frame in 1 : nframes(tdraw)
-        #print("frame = $frame\n")
-        cars_list = Vector{Entity}(undef,length(carsinframe(tdraw,frame)))
-
+        scene = Scene(Entity{VehicleState,VehicleDef,Int64}, 
+            length(carsinframe(tdraw,frame)))
         scene_ind = 0
         for id in carsinframe(tdraw, frame)
-            #print("id = $id\n")
             dfind = car_df_index(tdraw, id, frame)
 
             posG = VecSE2(df[dfind, :x], df[dfind, :y], df[dfind, :psi_rad])
             vx = df[dfind,:vx]
             vy = df[dfind,:vy]
             speed = sqrt(vx*vx + vy*vy)
-            cars_list[scene_ind+=1] = Entity(VehicleState(posG, roadway, speed),vehdefs[id],id)
+            push!(scene,Entity(VehicleState(posG, roadway, speed),vehdefs[id],id))
         end
 
-        Trajdata[frame] = Scene(cars_list)
+        Trajdata[frame] = scene
 
     end
     

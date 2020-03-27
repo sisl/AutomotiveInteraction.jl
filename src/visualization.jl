@@ -17,7 +17,8 @@ function video_trajdata_replay(id_list = [];range=nothing,trajdata,roadway,filen
         temp_scene = trajdata[i]
         if !isempty(id_list) keep_vehicle_subset!(temp_scene,id_list) end
         
-        scene_visual = render([roadway,temp_scene])
+        scene_visual = render([roadway,temp_scene,
+                        IDOverlay(scene=temp_scene,font_size=12)])
             
         push!(frames,scene_visual)
     end
