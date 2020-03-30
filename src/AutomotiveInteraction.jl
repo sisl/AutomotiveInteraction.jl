@@ -10,6 +10,7 @@ using Reel
 using DataFrames
 using DelimitedFiles
 using Parameters
+using Random # For AbstractRNG in Base.rand for c-idm
 
 AutomotiveVisualization.set_render_mode(:fancy)
 
@@ -54,7 +55,6 @@ export
     scenelist2video,
     curvepts_overlay,
     LaneOverlay,
-    render!,
     scenelist2video_curvepts
 include("visualization.jl")
 

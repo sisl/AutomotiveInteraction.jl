@@ -32,7 +32,7 @@ the car follows the IntelligentDriverModel.
     consider_merge::Bool = false
 end
 
-Base.rand(model::CooperativeIDM) = LaneFollowingAccel(model.a)
+
 function AutomotiveSimulator.reset_hidden_state!(model::CooperativeIDM)
     reset_hidden_state!(model.idm)
     model.a = 0.0
@@ -104,8 +104,11 @@ function AutomotiveSimulator.observe!(model::CooperativeIDM, scene::Scene, roadw
             end
         end
     end
+    print("cidm observe says: I'm done observing\n")
     return model
 end
+
+Base.rand(rng::AbstractRNG,model::CooperativeIDM) = LaneFollowingAccel(model.a)
 
 
 function find_merge_vehicle(env::MergingEnvironment, scene::Scene,ego_veh)

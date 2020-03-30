@@ -37,13 +37,13 @@ function place_vehs_on_straight_road()
 
     scene = Scene()
 
-    veh1 = Vehicle(VehicleState(VecSE2(10.,0.,0.),road_straight,20.),VehicleDef(),1)
+    veh1 = Entity(VehicleState(VecSE2(10.,0.,0.),road_straight,20.),VehicleDef(),1)
     push!(scene,veh1)
 
-    veh2 = Vehicle(VehicleState(VecSE2(30.,0.,0.),road_straight,10.),VehicleDef(),2)
+    veh2 = Entity(VehicleState(VecSE2(30.,0.,0.),road_straight,10.),VehicleDef(),2)
     push!(scene,veh2)
 
-    veh3 = Vehicle(VehicleState(VecSE2(30.,5.,0.),road_straight,20.),VehicleDef(),3)
+    veh3 = Entity(VehicleState(VecSE2(30.,5.,0.),road_straight,20.),VehicleDef(),3)
     push!(scene,veh3)
 
     return scene,road_straight
@@ -75,13 +75,13 @@ function place_vehs_on_separated_segments_road()
 
     scene = Scene()
 
-    veh1 = Vehicle(VehicleState(VecSE2(10.,0.,0.),test_road,20.),VehicleDef(),1)
+    veh1 = Entity(VehicleState(VecSE2(10.,0.,0.),test_road,20.),VehicleDef(),1)
     push!(scene,veh1)
 
-    veh2 = Vehicle(VehicleState(VecSE2(30.,0.,0.),test_road,10.),VehicleDef(),2)
+    veh2 = Entity(VehicleState(VecSE2(30.,0.,0.),test_road,10.),VehicleDef(),2)
     push!(scene,veh2)
 
-    veh3 = Vehicle(VehicleState(VecSE2(30.,5.,0.),test_road,20.),VehicleDef(),3)
+    veh3 = Entity(VehicleState(VecSE2(30.,5.,0.),test_road,20.),VehicleDef(),3)
     push!(scene,veh3)
 
     return scene,test_road
@@ -226,14 +226,15 @@ run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway_interaction,
 """
 function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename,traj,roadway,nomergeoverlay=true)
 
-    scene_real = get_scene(start_frame,traj)
+    scene_real = traj[start_frame]
     if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
 
     models = make_cidm_models(scene_real)
 
-    scene_list = get_hallucination_scenes(scene_real,models=models,
-        id_list=id_list,duration=duration,roadway=roadway)
-    
+    #scene_list = get_hallucination_scenes(scene_real,models=models,id_list=id_list,duration=duration,roadway=roadway)
+    nticks = Int(ceil(duration/INTERACTION_TIMESTEP))
+    scene_list = simulate(scene_real,roadway,models,nticks,INTERACTION_TIMESTEP)
+
     if nomergeoverlay
         scenelist2video(scene_list,filename=filename,roadway=roadway)
     else
@@ -252,7 +253,7 @@ run_vehicles_curvept_overlay(id_list=[6,8],roadway=road_ext,traj=traj_ext,
 """
 function run_vehicles_curvept_overlay(;id_list=[],start_frame=1,duration=10.,filename,traj,roadway)
 
-    scene_real = get_scene(start_frame,traj)
+    scene_real = traj[start_frame]
     if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
 
     models = make_def_models(scene_real)
@@ -274,14 +275,14 @@ test_barrier_vehicle(id_list=[20,29,19,28,6,8,25,2,10,7,18,12,100],roadway=road_
 ```
 """
 function test_barrier_vehicle(;id_list,start_frame=1,duration=10.,roadway,traj,filename)
-    scene = get_scene(start_frame,traj)
+    scene = traj[start_frame]
     keep_vehicle_subset!(scene,id_list)
     veh_20 = scene[findfirst(20,scene)]
     veh20_state = veh_20.state
     deleteat!(scene,findfirst(20,scene)) # Remove veh 20 from scene
     barrier_state = VehicleState(veh20_state.posG,veh20_state.posF,0.)
     barrier_id = 100
-    barrier_veh = Vehicle(barrier_state,VehicleDef(),barrier_id)
+    barrier_veh = Entity(barrier_state,VehicleDef(),barrier_id)
     push!(scene,barrier_veh) # Insert barrier vehicle instead of the removed vehicle 20
 
     models = make_def_models(scene)
@@ -314,7 +315,7 @@ function test_jumpy_vehicle(;segment_length::Float64=100.,separation::Float64=2.
         filename=joinpath(@__DIR__,"../julia_notebooks/media/jumpy_test.mp4"))
     road_break = make_discont_roadway_jagged(segment_length = segment_length,separation=separation)
     scene = Scene(500)
-    push!(scene,Vehicle(VehicleState(VecSE2(0.,0.,0.),road_break,5.),VehicleDef(),1))
+    push!(scene,Entity(VehicleState(VecSE2(0.,0.,0.),road_break,5.),VehicleDef(),1))
     models = Dict{Int64,DriverModel}()
     models[1] = Tim2DDriver(0.1)
     scene_list = get_hallucination_scenes(scene,roadway=road_break,models=models,duration=duration)

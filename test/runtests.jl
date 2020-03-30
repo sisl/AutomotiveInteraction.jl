@@ -11,16 +11,12 @@ roadway_no_ext = make_roadway_interaction();
 road_ext = make_roadway_interaction_with_extensions();
 traj_ext = read_veh_tracks(roadway=road_ext);
 
-    # Test the merging roadway rendering
-roadway = MergingRoadway(road_ext)
-render([roadway])
+    # Test the replay video making
+video_trajdata_replay(range=1:100,trajdata=traj_ext,roadway=road_ext,filename="test.mp4")
 
     # Run a list of vehicles with default param IDM+MOBIL driver models
 # run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=road_ext,traj=traj_ext,
 #     filename=joinpath(@__DIR__,"../julia_notebooks/media/run_test_ext_long.mp4"))
-
-    # In prep for AutoViz v0.8
-#render([roadway],camera=StaticCamera(position = VecE2(1000.,1000.)))
 
 # Do a barrier vehicle experiment
 # test_barrier_vehicle(id_list=[20,29,19,28,6,8,25,2,10,7,18,12,100],roadway=road_ext,

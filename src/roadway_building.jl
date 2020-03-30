@@ -372,7 +372,7 @@ function show_lane_overlays(road_ext::Roadway,traj_ext)
     lo_c = LaneOverlay(road_ext[LaneTag(3,1)],RGBA(1.,1.,0.,0.5))
     lo_d = LaneOverlay(road_ext[LaneTag(3,2)],RGBA(0.,1.,1.,0.5))
 
-    scene = get_scene(1,traj_ext)
+    scene = traj_ext[1]
     return render(scene,road_ext,[lo_a,lo_b1,lo_b2,lo_c,lo_d])
 end
 
@@ -394,7 +394,7 @@ end
 
 function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel,
     mr::MergingRoadway)
-    print("This is the (still code copied) rendering for merging lane boundary")
+    #print("This is the (still code copied) rendering for merging lane boundary")
     lane_marking_width=0.15
     lane_dash_len=1.0
     lane_dash_spacing=2.0
