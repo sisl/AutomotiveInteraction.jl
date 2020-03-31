@@ -220,7 +220,7 @@ end
 
 # Examples
 ```julia
-run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway_interaction,
+scene_list = run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway_interaction,
     filename=joinpath(@__DIR__,"julia_notebooks/media/run_test_ext_long.mp4"))
 ```
 """
@@ -241,7 +241,7 @@ function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename,traj,roadw
         print("Making merge overlay\n")
         scenelist2video_mergeoverlay(scene_list,filename=filename,roadway=roadway)
     end
-    return nothing
+    return scene_list
 end
 
 """

@@ -10,7 +10,6 @@ video_trajdata_replay(range=1:100,roadway=roadway,trajdata=traj_interaction,
 ```
 """
 function video_trajdata_replay(id_list = [];range=nothing,trajdata,roadway,filename)
-    AutomotiveVisualization.set_render_mode(:fancy)
     frames = Frames(MIME("image/png"), fps=10)
     mr = MergingRoadway(roadway) # Wrapper for specialized render for merging lanes
     mp = VecE2(1064.5227, 959.1559)
@@ -42,7 +41,6 @@ end
 ```
 """
 function scenelist2video(scene_list;id_list=[],roadway,filename)
-    AutomotiveVisualization.set_render_mode(:fancy)
     frames = Frames(MIME("image/png"),fps = 10)
     mr = MergingRoadway(roadway) # Wrapper for specialized render for merging lanes
     mp = VecE2(1064.5227, 959.1559)
@@ -61,6 +59,51 @@ function scenelist2video(scene_list;id_list=[],roadway,filename)
     write(filename,frames)
     return nothing
 end
+
+"""
+function video_overlay_scenelists(scene_list_1,scene_list_2,roadway,filename)
+
+# Example
+```julia
+scene_list_1 = run_vehicles(id_list=[6,8,19,28,29],roadway=road_ext,traj=traj_ext,
+filename="model_driven.mp4")
+scene_list_2 = traj_ext[1:length(scene_list_1)]
+video_overlay_scenes(scene_list_1,scene_list_2,id_list=[6,8,19,28,29],
+roadway=road_ext,filename="model_vs_truth.mp4")
+```
+"""
+function video_overlay_scenelists(scene_list_1,scene_list_2;
+    id_list=[],roadway,filename)
+    @assert length(scene_list_1) == length(scene_list_2)
+    frames = Frames(MIME("image/png"),fps = 10)
+    mr = MergingRoadway(roadway) # Wrapper for specialized render for merging lanes
+    mp = VecE2(1064.5227, 959.1559)
+
+    # Loop over list of scenes and convert to video
+    for i in 1:length(scene_list_1)
+        if !isempty(id_list) keep_vehicle_subset!(scene_list_1[i],id_list) end
+        if !isempty(id_list) keep_vehicle_subset!(scene_list_2[i],id_list) end
+        scene1 = scene_list_1[i]
+        scene2 = scene_list_2[i]
+
+        # By default, all the cars are assigned random colors
+        # Explicitly color code the cars to have only 2 colors
+        renderables = [
+            mr,
+            (FancyCar(car=scene1[j],color=colorant"blue") for j in 1:length(scene1))...,
+            IDOverlay(scene=scene1),
+            (FancyCar(car=scene2[j],color=colorant"red") for j in 1:length(scene2))...,
+            IDOverlay(scene=scene2),
+            TextOverlay(text=["frame=$(i)"],font_size=12)
+        ]
+        scene_visual = render(renderables,camera=StaticCamera(position=mp,zoom=5.))
+        push!(frames,scene_visual)
+    end
+    print("Making video overlay scenelists. Filename: $(filename)\n")
+    write(filename,frames)
+    return nothing
+end
+   
 
 # function: make a video from a list of scenes with curvepts overlayed
 """

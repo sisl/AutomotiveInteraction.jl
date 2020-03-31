@@ -81,7 +81,7 @@ end
 
 function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel,
      overlay::LaneOverlay, scene::Scene, roadway::Roadway)
-    render!(rendermodel, overlay.lane, roadway, color_asphalt=overlay.color) # this display a lane with the specified color
+    add_instruction!(rendermodel, overlay.lane, roadway, color_asphalt=overlay.color) # this display a lane with the specified color
     return rendermodel
 end
 
