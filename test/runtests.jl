@@ -7,12 +7,15 @@ using AutomotiveSimulator
 using AutomotiveVisualization
 
     # Make the roadway both without and with extension, and read vehicle tracks
+
 roadway_no_ext = make_roadway_interaction();
 road_ext = make_roadway_interaction_with_extensions();
 traj_ext = read_veh_tracks(roadway=road_ext);
 
+
     # Test the replay video making
-video_trajdata_replay(range=1:100,trajdata=traj_ext,roadway=road_ext,filename="test.mp4")
+video_trajdata_replay(range=1:100,trajdata=traj_ext,roadway=road_ext,
+filename="test.mp4")
 
     # Run a list of vehicles with default param IDM+MOBIL driver models
 # run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=road_ext,traj=traj_ext,
@@ -23,10 +26,9 @@ video_trajdata_replay(range=1:100,trajdata=traj_ext,roadway=road_ext,filename="t
 #     traj=traj_ext,filename=joinpath(@__DIR__,"../julia_notebooks/media/barrier_test.mp4"))
 
     # Generate model driven traj and compare to ground truth visually
-id_list = [6,8,19,28,29]
-scene_list_1 = run_vehicles(id_list=id_list,roadway=road_ext,traj=traj_ext,filename="model_driven.mp4")
-scene_list_2 = traj_ext[1:length(scene_list_1)]
-video_overlay_scenes(scene_list_1,scene_list_2,id_list=id_list,roadway=road_ext,filename="model_vs_truth.mp4")
+    id_list = [6,19,28,29,34,37,40,42,43,49,50]
+    compare2truth(id_list=id_list,start_frame=101,traj=traj_ext,roadway=road_ext,
+    filename = "compare.mp4")
 
 
     # Create the merging environment

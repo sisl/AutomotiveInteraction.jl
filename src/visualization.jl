@@ -16,11 +16,13 @@ function video_trajdata_replay(id_list = [];range=nothing,trajdata,roadway,filen
     for i in range
         temp_scene = trajdata[i]
         if !isempty(id_list) keep_vehicle_subset!(temp_scene,id_list) end
-        
-        scene_visual = render([mr,temp_scene,
-                        IDOverlay(scene=temp_scene,font_size=12)],
-                        camera=StaticCamera(position=mp,zoom=5.)
-                        )
+        renderables = [
+            mr,
+            (FancyCar(car=temp_scene[j]) for j in 1:length(temp_scene))...,
+            IDOverlay(scene=temp_scene),
+            TextOverlay(text=["frame=$(i)"],font_size=12)
+        ]
+        scene_visual = render(renderables,camera=StaticCamera(position=mp,zoom=5.))
             
         push!(frames,scene_visual)
     end

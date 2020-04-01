@@ -224,7 +224,7 @@ scene_list = run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway
     filename=joinpath(@__DIR__,"julia_notebooks/media/run_test_ext_long.mp4"))
 ```
 """
-function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename,traj,roadway,nomergeoverlay=true)
+function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename="",traj,roadway,nomergeoverlay=true)
 
     scene_real = traj[start_frame]
     if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
@@ -235,13 +235,39 @@ function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename,traj,roadw
     nticks = Int(ceil(duration/INTERACTION_TIMESTEP))
     scene_list = simulate(scene_real,roadway,models,nticks,INTERACTION_TIMESTEP)
 
-    if nomergeoverlay
-        scenelist2video(scene_list,filename=filename,roadway=roadway)
-    else
-        print("Making merge overlay\n")
-        scenelist2video_mergeoverlay(scene_list,filename=filename,roadway=roadway)
+    if filename != ""
+        if nomergeoverlay
+            scenelist2video(scene_list,filename=filename,roadway=roadway)
+        else
+            print("Making merge overlay\n")
+            scenelist2video_mergeoverlay(scene_list,filename=filename,roadway=roadway)
+        end
     end
     return scene_list
+end
+
+"""
+function compare2truth(;id_list=[],start_frame=101,duration=10,traj,roadway,filename)
+    scene_list_1 = run_vehicles(id_list=id_list,start_frame=start_frame,duration=duration,
+    traj=traj,roadway=roadway)
+
+- Compare model driven trajectory by overlaying ground truth
+
+# Examples
+```julia
+id_list = [6,19,28,29,34,37,40,42,43,49,50]
+compare2truth(id_list=id_list,start_frame=101,traj=traj_ext,roadway=road_ext,
+filename = "julia_notebooks/media/compare_startframe.mp4")
+```
+"""
+function compare2truth(;id_list=[],start_frame,duration=10,traj,roadway,filename)
+    scene_list_1 = run_vehicles(id_list=id_list,start_frame=start_frame,duration=duration,
+    traj=traj,roadway=roadway)
+    nticks = Int(ceil(duration/INTERACTION_TIMESTEP))
+    scene_list_2 = traj[start_frame:start_frame+nticks]
+    video_overlay_scenelists(scene_list_1,scene_list_2,id_list=id_list,
+    roadway=roadway,filename=filename)
+    return nothing
 end
 
 """

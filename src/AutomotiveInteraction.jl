@@ -12,8 +12,6 @@ using DelimitedFiles
 using Parameters
 using Random # For AbstractRNG in Base.rand for c-idm
 
-AutomotiveVisualization.set_render_mode(:fancy)
-
 export 
     keep_vehicle_subset!,
     make_def_models,
@@ -23,6 +21,7 @@ export
     make_TimLaneChanger_models,
     get_hallucination_scenes,
     run_vehicles,
+    compare2truth,
     run_vehicles_curvept_overlay,
     test_barrier_vehicle,
     test_jumpy_vehicle

@@ -49,7 +49,7 @@ end
 
 function AutomotiveSimulator.observe!(model::CooperativeIDM, scene::Scene, roadway::Roadway, egoid::Int64)
     ego_ind = findfirst(egoid, scene)
-    print("---ego_id = $(egoid) \n")
+    #print("---ego_id = $(egoid) \n")
     ego = scene[ego_ind]
     # fore = get_neighbor_fore_along_lane(scene, ego_ind, roadway, VehicleTargetPointFront(), VehicleTargetPointRear(), VehicleTargetPointFront())
     # if fore.ind == nothing # uses the first vehicle on the lain as neighbor
@@ -72,7 +72,7 @@ function AutomotiveSimulator.observe!(model::CooperativeIDM, scene::Scene, roadw
         #println("No merge vehicle")
         model.a = model.a_idm
     else
-        print("Ahaaa: There is a merge veh bros. merge veh id =$(veh.id)\n")
+        #print("Ahaaa: There is a merge veh bros. merge veh id =$(veh.id)\n")
         model.other_acc = 0.0
         model.a = 0.0
         model.a
@@ -81,7 +81,7 @@ function AutomotiveSimulator.observe!(model::CooperativeIDM, scene::Scene, roadw
         model.ego_ttm = ego_ttm
         model.veh_ttm = veh_ttm
         if ( ego_ttm < 0.0 || ego_ttm < veh_ttm || veh_ttm == Inf)
-            print("Ego TTM < Merge TTM, ignoring\n")
+            #print("Ego TTM < Merge TTM, ignoring\n")
             ego_ttm < veh_ttm
             model.a = model.a_idm
             model.consider_merge = false
@@ -104,7 +104,7 @@ function AutomotiveSimulator.observe!(model::CooperativeIDM, scene::Scene, roadw
             end
         end
     end
-    print("cidm observe says: I'm done observing\n")
+    #print("cidm observe says: I'm done observing\n")
     return model
 end
 
