@@ -12,6 +12,9 @@ using DelimitedFiles
 using Parameters
 using Random # For AbstractRNG in Base.rand for c-idm
 
+using Distributions # For pdf(Normal) in weight_and_resample
+using StatsBase # For weight_and_resample
+
 export 
     keep_vehicle_subset!,
     make_def_models,
@@ -72,5 +75,11 @@ include("cooperative_IDM.jl")
 export
     MergeOverlay
 include("overlays.jl")
+
+export
+    initial_pmat,
+    hallucinate_a_step,
+    weight_and_resample
+include("particle_filtering.jl")
 
 end # End module

@@ -33,3 +33,8 @@ filename="test.mp4")
 
     # Create the merging environment
 env_interaction = MergingEnvironment(merge_point = VecSE2(1064.5227,959.1559,-2.8938))
+
+    # hallucinate_a_step
+scene = traj_ext[1]
+particle = [29.,NaN,1.5,5.,0.35,0.1,NaN,1.0]
+hallucinate_a_step(scene,particle,car_id=6,roadway=road_ext)
