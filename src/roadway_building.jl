@@ -392,6 +392,9 @@ struct MergingRoadway
     roadway::Roadway
 end
 
+"""
+Dedicated render function for the MergingRoadway wrapper
+"""
 function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel,
     mr::MergingRoadway)
     #print("This is the (still code copied) rendering for merging lane boundary")

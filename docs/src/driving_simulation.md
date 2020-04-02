@@ -1,4 +1,6 @@
 # Driving Simulation
+These functions help in running driving simulations.
+
 ```@docs
     keep_vehicle_subset!,
     make_def_models,
