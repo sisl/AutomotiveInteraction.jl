@@ -62,7 +62,7 @@ tdraw = INTERACTIONTrajdata("vehicle_tracks_000.csv")
 nframes(tdraw)
 ```
 """
-Records.nframes(trajdata::INTERACTIONTrajdata) = maximum(keys(trajdata.frame2cars))
+nframes(trajdata::INTERACTIONTrajdata) = maximum(keys(trajdata.frame2cars))
 
 # function: carsinframe for memory allocation
 """
@@ -107,25 +107,33 @@ function car_df_index(trajdata::INTERACTIONTrajdata, carid::Int, frame::Int)
     retval
 end
 
-# function: read vehicle tracks from provided csv file into object called `traj_interaction`
 """
-    function read_veh_tracks()
+    function read_veh_tracks(;roadway)
 - Reads the vehicle tracks information from `../dataset/vehicle_tracks_000.csv`
-- Returns `Trajdata` object containing list of scenes from the vehicle track information
+- Modernize to stop using `ListRecord` and `Trajdata`
+- Just use Vector of Scenes
+
+# Arguments
+- roadway: Used in the vehicle state to create `Frenet` coords for the vehicle on the provided roadway
 
 # Example
 ```julia
-traj_interaction = read_veh_tracks()
+road_ext = make_interaction_roadway_with_extensions()
+trajdata = read_veh_tracks(roadway=road_ext)
+
+# Then access a certain framenumber from the trajdata by
+scene = trajdata[1]
+render([road_ext,scene,IDOverlay(scene=scene)])
 ```
 """
-function read_veh_tracks()
+function read_veh_tracks(;roadway)
     # Read the csv data into tdraw which recasts csv info into a dataframe and also provides two
     # dicts called car2start and frame2cars
-    tdraw = INTERACTIONTrajdata("../dataset/vehicle_tracks_000.csv")
+    tdraw = INTERACTIONTrajdata(joinpath(@__DIR__,"../dataset/vehicle_tracks_000.csv"))
     df = tdraw.df
     vehdefs = Dict{Int, VehicleDef}()
-    states = Array{RecordState{VehicleState, Int}}(undef, nrow(df))
-    frames = Array{RecordFrame}(undef, nframes(tdraw))
+
+    Trajdata = Vector{Scene}(undef,nframes(tdraw))
 
     # Initialize the vehicles physically i.e type, length and width
     for (id, dfind) in tdraw.car2start
@@ -134,30 +142,23 @@ function read_veh_tracks()
     end
 
     # Fill in the vehicle state information in terms of x,y and speed
-    state_ind = 0
-
     for frame in 1 : nframes(tdraw)
-
-        frame_lo = state_ind+1
-
+        scene = Scene(Entity{VehicleState,VehicleDef,Int64}, 
+            length(carsinframe(tdraw,frame)))
+        scene_ind = 0
         for id in carsinframe(tdraw, frame)
-
             dfind = car_df_index(tdraw, id, frame)
 
             posG = VecSE2(df[dfind, :x], df[dfind, :y], df[dfind, :psi_rad])
             vx = df[dfind,:vx]
             vy = df[dfind,:vy]
             speed = sqrt(vx*vx + vy*vy)
-
-            states[state_ind += 1] = RecordState(VehicleState(posG, roadway_interaction, speed), id)
+            push!(scene,Entity(VehicleState(posG, roadway, speed),vehdefs[id],id))
         end
 
-        frame_hi = state_ind
-        frames[frame] = RecordFrame(frame_lo, frame_hi)
+        Trajdata[frame] = scene
+
     end
     
-    # Trajdata is defined in AutomotiveDrivingModels.jl/states/trajdatas.jl. It is a ListRecord
-    # from Records.jl. Its utility is storing a list of scenes
-    traj_interaction = Trajdata(INTERACTION_TIMESTEP, frames, states, vehdefs)
-    return traj_interaction
+    return Trajdata
 end
