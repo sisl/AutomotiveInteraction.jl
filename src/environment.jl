@@ -1,6 +1,3 @@
-using AutomotiveSimulator
-using Parameters
-
 """
     MergingEnvironment
 

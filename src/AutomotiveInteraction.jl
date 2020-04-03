@@ -77,6 +77,9 @@ export
 include("overlays.jl")
 
 export
+    FilteringEnvironment,
+    get_frenet_s,
+    get_lane_id,
     initial_pmat,
     hallucinate_a_step,
     weight_and_resample

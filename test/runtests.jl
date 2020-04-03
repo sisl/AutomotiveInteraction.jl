@@ -8,6 +8,7 @@ using AutomotiveVisualization
 
     # Make the roadway both without and with extension, and read vehicle tracks
 
+@testset "driving" begin
 roadway_no_ext = make_roadway_interaction();
 road_ext = make_roadway_interaction_with_extensions();
 traj_ext = read_veh_tracks(roadway=road_ext);
@@ -29,12 +30,23 @@ filename="test.mp4")
     id_list = [6,19,28,29,34,37,40,42,43,49,50]
     compare2truth(id_list=id_list,start_frame=101,traj=traj_ext,roadway=road_ext,
     filename = "compare.mp4")
+end
 
-
-    # Create the merging environment
-env_interaction = MergingEnvironment(merge_point = VecSE2(1064.5227,959.1559,-2.8938))
+@testset "Filtering" begin
+f = FilteringEnvironment()
 
     # hallucinate_a_step
-scene = traj_ext[1]
+scene = f.traj[1]
 particle = [29.,NaN,1.5,5.,0.35,0.1,NaN,1.0]
-hallucinate_a_step(scene,particle,car_id=6,roadway=road_ext)
+hallucinate_a_step(f,scene,particle,car_id=6)
+
+    # weight and resample
+limits = [10. 40.;0.1 10.;0.5 5.;1. 10.;0. 1.;-1. 1.;0. 20.;0. 1.]
+init_pmat = initial_pmat(limits=limits,num_particles=10,seed=4)
+id = 6
+scene = f.traj[1]
+true_next_scene = deepcopy(f.traj[2])
+true_nextpos = get_frenet_s(true_next_scene;car_id=id)
+true_nextlane = get_lane_id(true_next_scene,id)
+weight_and_resample(f,scene,true_nextpos,true_nextlane,init_pmat,car_id=id)
+end

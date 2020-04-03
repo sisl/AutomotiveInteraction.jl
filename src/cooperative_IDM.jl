@@ -130,7 +130,7 @@ function find_merge_vehicle(env::MergingEnvironment, scene::Scene,ego_veh)
         if lane.tag == merge_lane_tag
             veh_ttm = time_to_merge(env,veh,0.)
             diff_ttm_temp = abs(veh_ttm-ego_ttm)
-            print("merger vehicle id = $(veh.id)\n")
+            #print("merger vehicle id = $(veh.id)\n")
             if diff_ttm_temp < diff_ttm
                 diff_ttm = diff_ttm_temp
                 merge_veh = veh
