@@ -129,7 +129,7 @@ render([road_ext,scene,IDOverlay(scene=scene)])
 function read_veh_tracks(;roadway)
     # Read the csv data into tdraw which recasts csv info into a dataframe and also provides two
     # dicts called car2start and frame2cars
-    tdraw = INTERACTIONTrajdata(joinpath(@__DIR__,"../dataset/vehicle_tracks_000.csv"))
+    tdraw = INTERACTIONTrajdata(joinpath(@__DIR__,"dataset/vehicle_tracks_000.csv"))
     df = tdraw.df
     vehdefs = Dict{Int, VehicleDef}()
 

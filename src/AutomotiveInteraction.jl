@@ -28,7 +28,7 @@ export
     run_vehicles_curvept_overlay,
     test_barrier_vehicle,
     test_jumpy_vehicle
-include("driving_simulation.jl")
+include("Driving/driving_simulation.jl")
 
 export 
     append_to_curve!,
@@ -43,14 +43,14 @@ export
     make_discont_roadway_jagged,
     MergingRoadway,
     add_renderable!
-include("roadway_building.jl")
+include("Data_Processing/roadway_building.jl")
 
 export 
     INTERACTIONTrajdata,
     carsinframe,
     car_df_index,
     read_veh_tracks
-include("veh_track_reading.jl")
+include("Data_Processing/veh_track_reading.jl")
 
 export
     video_trajdata_replay,
@@ -59,22 +59,22 @@ export
     curvepts_overlay,
     LaneOverlay,
     scenelist2video_curvepts
-include("visualization.jl")
+include("Driving/visualization.jl")
 
 export
     MergingEnvironment,
     main_lane,
     merge_lane
-include("environment.jl")
+include("Driving/environment.jl")
 
 export
     CooperativeIDM,
     find_merge_vehicle
-include("cooperative_IDM.jl")
+include("Driving/cooperative_IDM.jl")
 
 export
     MergeOverlay
-include("overlays.jl")
+include("Driving/overlays.jl")
 
 export
     FilteringEnvironment,
@@ -82,7 +82,8 @@ export
     get_lane_id,
     initial_pmat,
     hallucinate_a_step,
-    weight_and_resample
-include("particle_filtering.jl")
+    weight_and_resample,
+    multistep_update
+include("Filtering/particle_filtering.jl")
 
 end # End module
