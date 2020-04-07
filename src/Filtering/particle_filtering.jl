@@ -3,7 +3,7 @@ const V_DES = 1; const SIGMA_IDM = 2; const T_HEADWAY = 3; const S_MIN=4;
 const POLITENESS = 5;const ADV_TH = 6;const SENSOR_SIGMA = 7;
 const COOPERATION = 8;    
 
-
+# struct: FilteringEnvironment
 """
 @with_kw struct FilteringEnvironment
 
@@ -21,93 +21,26 @@ f = FilteringEnvironment()
     timestep::Float64 = 0.1
 end
 
-# function: get frenet s
+# function: particle to c-IDM model
 """
-    function get_frenet_s(scene;car_id=-1)
+function cidm_from_particle(particle)
 
-# Examples
+- Use particle to assign paramters of CooperativeIDM
+
+# Example
 ```julia
-true_next_pos = get_frenet_s(true_next_scene,car_id=1)
+# See hallucinate_a_step
 ```
 """
-function get_frenet_s(scene;car_id=-1)
-    if car_id==-1 print("get_frenet_s says: Give valid car id") end
-    veh = scene[findfirst(car_id,scene)]
-    return veh.state.posF.s
-end
-
-""" 
-function get_veh_info(scene;car_id = -1)
-- Get position and velocity of specific vehicle from scene
-""" 
-function get_veh_info(scene;car_id = -1)
-    @assert car_id>0
-    pos=scene[findfirst(car_id,scene)].state.posF.s
-    vel = scene[findfirst(car_id,scene)].state.v
-    return pos,vel
-end
-
-# function: get lane id
-"""
-    function get_lane_id(scene,car_id)
-# Examples
-```julia
-get_lane_id(scene,1)
-```
-"""
-function get_lane_id(scene,car_id)
-    veh = scene[findfirst(car_id,scene)]
-    return veh.state.posF.roadind.tag.lane
-end
-
-# function: get lane change probability
-"""
-    function get_lane_change_prob(start_scene,particle;car_id=-1,num_samplings=10)
-- Probability of lane changing start from `start_scene`
-- hallucinating using `particle` for `car_id` using `num_samplings` hallucinations
-
-# Examples
-```julia
-lp = get_lane_change_prob(scene,particle,car_id = 1,roadway=road_ext)
-```
-"""
-function get_lane_change_prob(f::FilteringEnvironment,start_scene,particle;car_id=-1,
-    num_samplings=10)
-    if car_id==-1 @show "get_lane_change_prob says: Please give valid car_id" end
-    start_lane = get_lane_id(start_scene,car_id)
-    changed_count = 0; unchanged_count = 0
-    for i in 1:num_samplings
-        hpos,hlane = hallucinate_a_step(f,start_scene,particle,car_id=car_id)
-        if hlane == start_lane
-            unchanged_count += 1
-	else
-	    changed_count += 1
-	end
-    end
-    return (changed_count+1)/(num_samplings+2)
-end
-
-# function: Generate uniform sampling to start the initial particle matrix
-"""
-    function initial_pmat(;limits,num_particles,seed)
-- Generate initial particle matrix with `num_particles` particles with every col being a diff particle
-- Range of values that parameters can take is specified in `limits`. Should be num_params rows x 2 cols
-
-# Examples
-```julia
-limits = [10. 40.;0.1 10.;0.5 5.;1. 10.;0. 1.;-1. 1.;-20. 20.;0. 1.]
-initial_pmat(limits=limits,num_particles=10,seed=4)
-```
-"""
-function initial_pmat(;limits,num_particles,seed)
-    Random.seed!(seed)
-    num_params = size(limits,1)
-    p_mat = fill(0.,num_params,num_particles)
-
-    for i in 1:num_params
-        p_mat[i,:] = rand(Uniform(limits[i,1],limits[i,2]),1,num_particles)
-    end
-    return p_mat
+function cidm_from_particle(particle)
+    return CooperativeIDM(
+                c=particle[COOPERATION],
+                idm = IntelligentDriverModel(
+                            v_des = particle[V_DES],
+                            σ=particle[SIGMA_IDM],T=particle[T_HEADWAY],
+                            s_min=particle[S_MIN]
+                )
+            )
 end
 
 # function: hallucinate_a_step
@@ -130,9 +63,9 @@ function hallucinate_a_step(f::FilteringEnvironment,scene_input,particle;car_id=
 
     for veh in scene
         if veh.id == car_id
-            models[veh.id] = CooperativeIDM(c=particle[COOPERATION])
+            models[veh.id] = cidm_from_particle(particle)
         else
-            models[veh.id] = IntelligentDriverModel(v_des=50.)
+            models[veh.id] = IntelligentDriverModel(v_des=15.)
         end
     end
 
@@ -226,7 +159,7 @@ function multistep_update(f::FilteringEnvironment;car_id,start_frame,last_frame,
 - Hard coded limits on initial particle distribution generation
 
 # Returns
-- `final_p_mat`: Matrix with particles in separate columns
+- `final_p_mat`: Matrix with particles in separate columns. Mean of final particle set
 - `iterwise_p_mat`: A list with the associated particle matrix at each iteration
 
 # Examples
@@ -264,4 +197,73 @@ function multistep_update(f::FilteringEnvironment;car_id,start_frame,last_frame,
     mean_particle = mean(p_mat,dims=2)
     
     return mean_particle,iterwise_p_set
+end
+
+"""
+    function obtain_driver_models(veh_id_list,num_particles,start_frame,last_frame)
+Driver models for each vehicle in veh_id_list
+
+# Arguments
+- `veh_id_list` List with vehicle ids
+- `start_frame` Frame to start filtering from
+- `last_frame` Frame to end hallucination at
+
+# Returns
+- `models` Dict with veh id as key and IDM driver model as value
+- `final_particles` Dict with veh id as key and avg particle over final particle set as value
+- `mean_dist_mat`: Every elem is the mean dist of particle set at that iter (row) for that car (column)
+
+# Example
+```julia
+veh_id_list = [6]
+f = FilteringEnvironment()
+new_models, = obtain_driver_models(f,veh_id_list,500,1,5)
+```
+"""
+function obtain_driver_models(f::FilteringEnvironment,veh_id_list,num_particles,
+    start_frame,last_frame)
+    
+    models = Dict{Int64,DriverModel}() # key is vehicle id, value is driver model
+    final_particles = Dict{Int64,Array{Float64}}() # key is vehicle id, value is final particles
+    
+        # Loop over all the cars and get their corresponding IDM parameters by particle filter
+    num_cars = length(veh_id_list)
+    num_iters = last_frame-start_frame+2 # NEED TO CONFIRM THIS
+    
+        # num_iters x num_cars. Every elem is the mean dist of particle set at that iter for that car
+    mean_dist_mat = fill(0.,num_iters,num_cars)
+    
+    for (ii,veh_id) in enumerate(veh_id_list)
+        #print("obtain_driver_models. vehicle id = $(veh_id) \n")
+        
+        mean_particle, iterwise_p_set = multistep_update(f,num_p=num_particles,
+                car_id = veh_id,start_frame = start_frame,last_frame = last_frame)
+        #print("mean_particle", mean_particle, "\n")
+        
+        final_particles[veh_id] = mean_particle
+            # note: T=0.2 and s_min=1.
+        models[veh_id] = cidm_from_particle(mean_particle)
+        
+            # Get the mean distance from final particle over iterations
+        #p_fin = fill(0.,2,1)
+        #i = 0
+        #for (k,v) in mean_particle
+        #    i = i+1
+        #    p_fin[i] = v
+        #end
+        
+        # num_iters = length(iterwise_p_set) # SHOULD MATCH OUTSIDE LOOP VARIABLE
+        mean_dist_over_iters = fill(0.,num_iters,1)
+        #for (jj,p_mat) in enumerate(iterwise_p_set)
+        #    mean_dist_over_iters[jj,1] = avg_dist_particles(p_mat,p_fin)
+        #end
+        
+        #mean_dist_mat[:,ii] = mean_dist_over_iters    
+    end
+    
+        # Average over the cars and plot the filtering progress over frames
+    # avg_over_cars = mean(mean_dist_mat,dims=2)
+    # plot(avg_over_cars)
+    
+    return models, final_particles, mean_dist_mat
 end

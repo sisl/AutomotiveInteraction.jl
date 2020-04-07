@@ -50,4 +50,8 @@ weight_and_resample(f,scene,true_nextpos,true_nextlane,init_pmat,car_id=id)
 
     # multistep_update
 final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_frame=5)
+
+    # obtain driver models
+veh_id_list = [6]
+new_models, = obtain_driver_models(f,veh_id_list,500,1,5)
 end

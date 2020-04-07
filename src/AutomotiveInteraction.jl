@@ -78,12 +78,16 @@ include("Driving/overlays.jl")
 
 export
     FilteringEnvironment,
-    get_frenet_s,
-    get_lane_id,
-    initial_pmat,
     hallucinate_a_step,
     weight_and_resample,
-    multistep_update
+    multistep_update,
+    obtain_driver_models
 include("Filtering/particle_filtering.jl")
+
+export
+    get_frenet_s,
+    get_lane_id,
+    initial_pmat
+include("Filtering/utils.jl")
 
 end # End module
