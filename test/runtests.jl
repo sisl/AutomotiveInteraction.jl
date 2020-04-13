@@ -4,6 +4,7 @@ using Test
 using AutomotiveInteraction
 using AutomotiveSimulator
 using AutomotiveVisualization
+using Reel
 
     # Make the roadway both without and with extension, and read vehicle tracks
 
@@ -14,7 +15,7 @@ traj_ext = read_veh_tracks(roadway=road_ext);
 
     # Test the replay video making
 video_trajdata_replay(range=1:100,trajdata=traj_ext,roadway=road_ext,
-filename="media/test.mp4")
+filename="media/replay.mp4")
 
     # Generate model driven traj and compare to ground truth visually
 id_list = [6,19,28,29,34,37,40,42,43,49,50]
@@ -49,9 +50,11 @@ true_nextlane = get_lane_id(true_next_scene,id)
 weight_and_resample(f,scene,true_nextpos,true_nextlane,init_pmat,car_id=id)
 
     # multistep_update
-final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_frame=5)
+final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_frame=5,num_p=10);
+Reel.extension(m::MIME"image/svg+xml") = "svg"
+plot_pairwise_particles(iterwise_p_mat,filename="media/particles.gif")
 
     # obtain driver models
 veh_id_list = [6]
-new_models, = obtain_driver_models(f,veh_id_list,500,1,5)
+new_models, = obtain_driver_models(f,veh_id_list,100,1,5)
 end

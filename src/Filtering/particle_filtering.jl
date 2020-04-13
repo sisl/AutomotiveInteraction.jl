@@ -217,7 +217,7 @@ Driver models for each vehicle in veh_id_list
 ```julia
 veh_id_list = [6]
 f = FilteringEnvironment()
-new_models, = obtain_driver_models(f,veh_id_list,500,1,5)
+new_models,final_particles,mean_dist = obtain_driver_models(f,veh_id_list,500,1,5)
 ```
 """
 function obtain_driver_models(f::FilteringEnvironment,veh_id_list,num_particles,
@@ -244,21 +244,15 @@ function obtain_driver_models(f::FilteringEnvironment,veh_id_list,num_particles,
             # note: T=0.2 and s_min=1.
         models[veh_id] = cidm_from_particle(mean_particle)
         
-            # Get the mean distance from final particle over iterations
-        #p_fin = fill(0.,2,1)
-        #i = 0
-        #for (k,v) in mean_particle
-        #    i = i+1
-        #    p_fin[i] = v
-        #end
-        
+        print("After filtering mean_particle = $(mean_particle)\n")        
         # num_iters = length(iterwise_p_set) # SHOULD MATCH OUTSIDE LOOP VARIABLE
         mean_dist_over_iters = fill(0.,num_iters,1)
-        #for (jj,p_mat) in enumerate(iterwise_p_set)
-        #    mean_dist_over_iters[jj,1] = avg_dist_particles(p_mat,p_fin)
-        #end
+        for (jj,p_mat) in enumerate(iterwise_p_set)
+            current_mean_particle = mean(p_mat,dims=2)
+            mean_dist_over_iters[jj,1] = norm(current_mean_particle-mean_particle)
+        end
         
-        #mean_dist_mat[:,ii] = mean_dist_over_iters    
+        mean_dist_mat[:,ii] = mean_dist_over_iters    
     end
     
         # Average over the cars and plot the filtering progress over frames

@@ -14,6 +14,10 @@ using Random # For AbstractRNG in Base.rand for c-idm
 
 using Distributions # For pdf(Normal) in weight_and_resample
 using StatsBase # For weight_and_resample
+using LinearAlgebra # Form norm calculation for iterwise particle dist
+
+using Combinatorics # make param pairs for filtering progress pairwise plots
+using PGFPlots
 
 export 
     keep_vehicle_subset!,
@@ -87,7 +91,8 @@ include("Filtering/particle_filtering.jl")
 export
     get_frenet_s,
     get_lane_id,
-    initial_pmat
+    initial_pmat,
+    plot_pairwise_particles
 include("Filtering/utils.jl")
 
 end # End module
