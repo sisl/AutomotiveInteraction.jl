@@ -101,7 +101,7 @@ function video_overlay_scenelists(scene_list_1,scene_list_2;
         scene_visual = render(renderables,camera=StaticCamera(position=mp,zoom=5.))
         push!(frames,scene_visual)
     end
-    print("Making video overlay scenelists. Filename: $(filename)\n")
+    print("video_overlay_scenelists: List 1 in blue, list 2 in red. Filename: $(filename)\n")
     write(filename,frames)
     return nothing
 end

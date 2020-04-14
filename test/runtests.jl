@@ -4,7 +4,7 @@ using Test
 using AutomotiveInteraction
 using AutomotiveSimulator
 using AutomotiveVisualization
-using Reel
+# using Reel
 
     # Make the roadway both without and with extension, and read vehicle tracks
 
@@ -51,10 +51,18 @@ weight_and_resample(f,scene,true_nextpos,true_nextlane,init_pmat,car_id=id)
 
     # multistep_update
 final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_frame=5,num_p=10);
-Reel.extension(m::MIME"image/svg+xml") = "svg"
-plot_pairwise_particles(iterwise_p_mat,filename="media/particles.gif")
+# Reel.extension(m::MIME"image/svg+xml") = "svg"
+# plot_pairwise_particles(iterwise_p_mat,filename="media/particles.gif")
 
     # obtain driver models
 veh_id_list = [6]
-new_models, = obtain_driver_models(f,veh_id_list,100,1,5)
-end
+new_models, = obtain_driver_models(f,veh_id_list,100,1,50)
+
+    # generate imitation trajectory and measure rmse
+start_frame = 1
+imit_scene_list = gen_imitation_traj(f,new_models,id_list=veh_id_list,start_frame=start_frame);
+true_scene_list = f.traj[start_frame:start_frame+100];
+rmse_pos_dict,rmse_vel_dict = compute_rmse(true_scene_list,imit_scene_list,id_list=veh_id_list);
+video_overlay_scenelists(imit_scene_list,true_scene_list,id_list=veh_id_list,roadway=f.roadway,filename="imit.mp4")
+
+end # testset Filtering

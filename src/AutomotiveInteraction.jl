@@ -92,7 +92,9 @@ export
     get_frenet_s,
     get_lane_id,
     initial_pmat,
-    plot_pairwise_particles
+    plot_pairwise_particles,
+    gen_imitation_traj,
+    compute_rmse
 include("Filtering/utils.jl")
 
 end # End module
