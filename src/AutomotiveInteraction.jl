@@ -94,6 +94,7 @@ export
     initial_pmat,
     plot_pairwise_particles,
     gen_imitation_traj,
+    imitation_with_replay,
     compute_rmse
 include("Filtering/utils.jl")
 

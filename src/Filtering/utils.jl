@@ -198,6 +198,70 @@ function gen_imitation_traj(f::FilteringEnvironment,models;
     return scene_list # Note: simulate appends scenes to the start scene
 end
 
+"""
+- Idea is to have leader vehicles that are replayed from the data
+- models has driver model associated to vehicles in id_list
+
+# Example
+```julia
+f=FilteringEnvironment()
+new_models,final_particles,mean_dist = obtain_driver_models(f,egoids,30,1,30)
+imit_scene_list = imitation_with_replay(f,new_models,egoids=[28,29],replay_ids=[6,8,13])
+```
+"""
+function imitation_with_replay(f::FilteringEnvironment,models;
+    egoids=[],replay_ids=[],start_frame=1,duration=10.)
+
+    print("egoids = $egoids\n")
+    nticks = Int(ceil(duration/f.timestep))
+
+    start_scene = deepcopy(f.traj[start_frame])
+    
+    ego_replay_ids = deepcopy(egoids)
+    append!(ego_replay_ids,replay_ids)
+    print("ego_replay_ids = $(ego_replay_ids)\n")
+    print("start_scene = $start_scene\n")
+    keep_vehicle_subset!(start_scene,ego_replay_ids)
+    
+    print("start_scene = $start_scene\n")
+    
+        # Populate list of ego vehicles from egoids
+    ego_vehs = Vector{Entity}(undef,length(egoids))
+    for (i, egoid) in enumerate(egoids)
+        print("egoid = $egoid\n")
+        vehidx = findfirst(egoid, start_scene)
+        print("id = $vehidx\n")
+        ego_vehs[i] = start_scene[vehidx]
+    end
+
+    scenes = [Scene(Entity{VehicleState,VehicleDef,Int64}, 
+                    length(start_scene)) for i=1:nticks+1]
+
+    copyto!(scenes[1], start_scene)
+
+    for tick in 1:nticks
+        print("tick = $tick")
+        #empty!(scenes[tick + 1])
+        traj_scene = deepcopy(f.traj[start_frame+tick])
+        keep_vehicle_subset!(traj_scene,replay_ids)
+
+        copyto!(scenes[tick+1],traj_scene)
+
+        for (i, ego_veh) in enumerate(ego_vehs)
+            print("scenes[tick] = $(scenes[tick])\n")
+            observe!(models[ego_veh.id], scenes[tick], f.roadway, ego_veh.id)
+            a = rand(models[ego_veh.id])
+
+            veh_state_p  = propagate(ego_veh, a, f.roadway, f.timestep)
+
+            push!(scenes[tick + 1], Entity(veh_state_p, ego_veh.def, ego_veh.id))
+            ego_vehs[i] = Entity(ego_veh,veh_state_p)
+            
+        end
+    end
+    return scenes
+end
+
 # function: compute rmse of generated trajectory vs true trajectory
 """
     function compute_rmse(true_scene_list,halluc_scene_list;id_list)

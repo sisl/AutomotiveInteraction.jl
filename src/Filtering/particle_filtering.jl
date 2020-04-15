@@ -234,7 +234,7 @@ function obtain_driver_models(f::FilteringEnvironment,veh_id_list,num_particles,
     mean_dist_mat = fill(0.,num_iters,num_cars)
     
     for (ii,veh_id) in enumerate(veh_id_list)
-        #print("obtain_driver_models. vehicle id = $(veh_id) \n")
+        print("obtain_driver_models. vehicle id = $(veh_id) \n")
         
         mean_particle, iterwise_p_set = multistep_update(f,num_p=num_particles,
                 car_id = veh_id,start_frame = start_frame,last_frame = last_frame)
@@ -244,7 +244,7 @@ function obtain_driver_models(f::FilteringEnvironment,veh_id_list,num_particles,
             # note: T=0.2 and s_min=1.
         models[veh_id] = cidm_from_particle(mean_particle)
         
-        print("After filtering mean_particle = $(mean_particle)\n")        
+        #print("After filtering mean_particle = $(mean_particle)\n")        
         # num_iters = length(iterwise_p_set) # SHOULD MATCH OUTSIDE LOOP VARIABLE
         mean_dist_over_iters = fill(0.,num_iters,1)
         for (jj,p_mat) in enumerate(iterwise_p_set)

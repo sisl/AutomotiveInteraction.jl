@@ -55,7 +55,7 @@ final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_fram
 # plot_pairwise_particles(iterwise_p_mat,filename="media/particles.gif")
 
     # obtain driver models
-veh_id_list = [6]
+veh_id_list = [13,8,6,19,28,29]
 new_models, = obtain_driver_models(f,veh_id_list,100,1,50)
 
     # generate imitation trajectory and measure rmse
@@ -65,4 +65,9 @@ true_scene_list = f.traj[start_frame:start_frame+100];
 rmse_pos_dict,rmse_vel_dict = compute_rmse(true_scene_list,imit_scene_list,id_list=veh_id_list);
 video_overlay_scenelists(imit_scene_list,true_scene_list,id_list=veh_id_list,roadway=f.roadway,filename="imit.mp4")
 
+    # imitation trajectory with leaders using replay
+new_models,final_particles,mean_dist = obtain_driver_models(f,egoids,30,1,30)
+scene_list_1 = imitation_with_replay(f,new_models,egoids=[28,29],replay_ids=[6,8,13])
+scene_list_2 = f.traj[1:length(scene_list_1)]
+video_overlay_scenelists(scene_list_1,scene_list_2,roadway=f.roadway,filename="replay_imit.mp4",id_list=[6,8,13,28,29])
 end # testset Filtering

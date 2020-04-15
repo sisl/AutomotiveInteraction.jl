@@ -69,9 +69,9 @@ function video_overlay_scenelists(scene_list_1,scene_list_2,roadway,filename)
 ```julia
 scene_list_1 = run_vehicles(id_list=[6,8,19,28,29],roadway=road_ext,traj=traj_ext,
 filename="model_driven.mp4")
-scene_list_2 = traj_ext[1:length(scene_list_1)]
-video_overlay_scenes(scene_list_1,scene_list_2,id_list=[6,8,19,28,29],
-roadway=road_ext,filename="model_vs_truth.mp4")
+scene_list_2 = f.traj[1:length(scene_list_1)]
+video_overlay_scenes(scene_list_1,scene_list_2,id_list=[6,8,13,28,29],
+roadway=road_ext,filename="imit_real.mp4")
 ```
 """
 function video_overlay_scenelists(scene_list_1,scene_list_2;
