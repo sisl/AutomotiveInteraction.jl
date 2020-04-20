@@ -53,7 +53,9 @@ export
     INTERACTIONTrajdata,
     carsinframe,
     car_df_index,
-    read_veh_tracks
+    read_veh_tracks,
+    extract_timespan,
+    sample_simultaneous_vehs
 include("Data_Processing/veh_track_reading.jl")
 
 export

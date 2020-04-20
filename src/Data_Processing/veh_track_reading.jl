@@ -162,3 +162,200 @@ function read_veh_tracks(;roadway)
     
     return Trajdata
 end
+
+# function: start and end time extraction of vehicles
+"""
+function extract_timespan(trajscenesvector;offset=1,minlength=20,verbose=false)
+
+- Extract the start time and end time of each vehicle
+- Used in sampling a set of vehicles that drive together for a given timespan
+
+# Inputs
+- trajscenesvector: Is the output from read_veh_tracks i.e. vector of scenes
+- offset from the start
+
+# Returns
+- Dict with car id as key and start and end times of the car id
+
+# Examples
+```julia
+trajscenes = read_veh_tracks(roadway=roadway)
+timestamped_trajscenes = extract_timespan(trajscenes)
+```
+"""
+function extract_timespan(trajscenesvector;offset=1,minlength=20,verbose=false)
+    index = Dict()
+    scene_length = maximum(length(trajscenesvector[i]) for i in 1 : length(trajscenesvector))
+    scene = Scene(Entity{VehicleState,VehicleDef,Int64}, scene_length)
+    prev, cur = Set(), Set()
+    n_frames = length(trajscenesvector)
+
+    # iterate each frame collecting info about the vehicles
+    for frame in offset : n_frames - offset
+        if verbose > 0
+            print("\rframe $(frame) / $(n_frames - offset)")
+        end
+        cur = Set()
+        scene=trajscenesvector[frame]
+
+        # add all the vehicles to the current set
+        for veh in scene
+            push!(cur, veh.id)
+            # insert previously unseen vehicles into the index
+            if !in(veh.id, prev)
+                index[veh.id] = Dict("ts"=>frame)
+            end
+        end
+
+        # find vehicles in the previous but not the current frame
+        missing = setdiff(prev, cur)
+        for id in missing
+            # set the final frame for all these vehicles
+            index[id]["te"] = frame - 1
+        end
+
+        # step forward
+        prev = cur
+    end
+
+    # at this point, any ids in cur are in the last frame, so add them in 
+    for id in cur
+        index[id]["te"] = n_frames - offset
+    end
+
+    # postprocess to remove undesirable trajectories
+    for (vehid, infos) in index
+        # check for start and end frames 
+        if !in("ts", keys(infos)) || !in("te", keys(infos))
+            if verbose > 0
+                println("delete vehid $(vehid) for missing keys")
+            end
+            delete!(index, vehid)
+
+        # check for start and end frames greater than minlength
+        elseif infos["te"] - infos["ts"] < minlength
+            if verbose > 0
+                println("delete vehid $(vehid) for below minlength")
+            end
+            delete!(index, vehid)
+        end
+    end
+
+    return index
+end
+
+
+# Functions: Sampling vehicles that drive together
+"""
+    function random_sample_from_set_without_replacement(s, n)
+Description
+    This function samples n values from the set s without replacement, and 
+    does not work with anything except a set s. Could use statsbase, but want 
+    to avoid the dependency.
+- Used by `sample_multiple_trajdata_vehicle`
+Args:
+    - s: a set
+    - n: number of values to sample
+Returns:
+    - a subset of the values in s, as a list containing n elements
+"""
+function random_sample_from_set_without_replacement(s, n)
+    @assert length(s) >= n
+    sampled = Set()
+    for i in 1:n
+        cur = rand(s)
+        push!(sampled, cur)
+        delete!(s, cur)
+    end
+    return collect(sampled)
+end
+
+# Sample vehicles that stay in the scene together
+"""
+function sample_simultaneous_vehs
+
+- Finds groups of vehicles that stay together on the road for a duration
+- Adapted from `ngsim/julia/src/ngsim_utils.jl`
+
+# Inputs
+- timestamped_trajscenes: What we get from extract_timespan i.e. dict with vehid and ts, te
+
+# Returns
+- `egoids`: List of vehicles that drive together with the specified ego vehicle for `offset` num of steps
+- `ts`: Start frame number
+- `te`: End frame number
+
+# Examples
+```julia
+a,b,c= sample_simultaneous_vehs(10,50,timestamped_trajscenes,egoid=6)
+```
+"""
+function sample_simultaneous_vehs(
+        n_veh::Int, 
+        offset::Int,
+        timestamped_trajscenes;
+        max_resamples::Int = 100,
+        egoid::Union{Nothing, Int} = nothing,
+        verbose::Bool = true,
+        rseed::Union{Nothing, Int} = nothing
+    )
+    
+    if rseed != nothing
+        Random.seed!(rseed)
+    end
+    traj_idx = 1
+    
+    trajinfos = timestamped_trajscenes
+    
+    # if passed in egoid and traj_idx, use those, otherwise, sample
+    if egoid == nothing 
+        # sample the first vehicle and start and end timesteps
+        egoid = rand(collect(keys(trajinfos[traj_idx])))
+    end
+    
+    ts = trajinfos[egoid]["ts"]
+    te = trajinfos[egoid]["te"]
+    # this sampling assumes ts:te-offset is a valid range
+    # this is enforced by the initial computation of the index / trajinfo
+    ts = rand(ts:te - offset)
+    # after setting the start timestep randomly from the valid range, next 
+    # update the end timestep to be offset timesteps following it 
+    # this assume that we just want to simulate for offset timesteps
+    te = ts + offset
+
+    # find all other vehicles that have at least 'offset' many steps in common 
+    # with the first sampled egoid starting from ts. If the number of such 
+    # vehicles is fewer than n_veh, then resample
+    # start with the set containing the first egoid so we don't double count it
+    egoids = Set{Int}(egoid)
+    for othid in keys(trajinfos)
+        oth_ts = trajinfos[othid]["ts"]
+        oth_te = trajinfos[othid]["te"]
+        # other vehicle must start at or before ts and must end at or after te
+        if oth_ts <= ts && te <= oth_te
+            push!(egoids, othid)
+        end
+    end
+
+    # check that there are enough valid ids from which to sample
+    if length(egoids) < n_veh
+        # if not, resample
+        if verbose
+            println("WARNING: insuffcient sampling ids in sample_multiple_trajdata_vehicle")
+        end
+        if max_resamples == 0
+            error("ERROR: reached maximum resamples in sample_multiple_trajdata_vehicle")
+        else
+            return sample_simultaneous_vehs(
+                n_veh, 
+                offset, 
+                max_resamples=max_resamples - 1,
+                verbose=verbose)
+        end
+    end
+
+    # reaching this point means there are sufficient ids, sample the ones to use
+    egoids = random_sample_from_set_without_replacement(egoids, n_veh)
+
+    return egoids, ts, te
+end
