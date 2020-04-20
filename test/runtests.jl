@@ -35,39 +35,32 @@ end
 f = FilteringEnvironment()
 
     # hallucinate_a_step
-scene = f.traj[1]
-particle = [29.,NaN,1.5,5.,0.35,0.1,NaN,1.0]
-hallucinate_a_step(f,scene,particle,car_id=6)
+# scene = f.traj[1]
+# particle = [29.,NaN,1.5,5.,0.35,0.1,NaN,1.0]
+# hallucinate_a_step(f,scene,particle,car_id=6)
 
-    # weight and resample
-limits = [10. 40.;0.1 10.;0.5 5.;1. 10.;0. 1.;-1. 1.;0. 20.;0. 1.]
-init_pmat = initial_pmat(limits=limits,num_particles=10,seed=4)
-id = 6
-scene = f.traj[1]
-true_next_scene = deepcopy(f.traj[2])
-true_nextpos = get_frenet_s(true_next_scene;car_id=id)
-true_nextlane = get_lane_id(true_next_scene,id)
-weight_and_resample(f,scene,true_nextpos,true_nextlane,init_pmat,car_id=id)
+#     # weight and resample
+# limits = [10. 40.;0.1 10.;0.5 5.;1. 10.;0. 1.;-1. 1.;0. 20.;0. 1.]
+# init_pmat = initial_pmat(limits=limits,num_particles=10,seed=4)
+# id = 6
+# scene = f.traj[1]
+# true_next_scene = deepcopy(f.traj[2])
+# true_nextpos = get_frenet_s(true_next_scene;car_id=id)
+# true_nextlane = get_lane_id(true_next_scene,id)
+# weight_and_resample(f,scene,true_nextpos,true_nextlane,init_pmat,car_id=id)
 
     # multistep_update
-final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_frame=5,num_p=10);
+final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_frame=50,num_p=100);
 # Reel.extension(m::MIME"image/svg+xml") = "svg"
 # plot_pairwise_particles(iterwise_p_mat,filename="media/particles.gif")
 
-    # obtain driver models
-veh_id_list = [13,8,6,19,28,29]
-new_models, = obtain_driver_models(f,veh_id_list,100,1,50)
-
-    # generate imitation trajectory and measure rmse
-start_frame = 1
-imit_scene_list = gen_imitation_traj(f,new_models,id_list=veh_id_list,start_frame=start_frame);
-true_scene_list = f.traj[start_frame:start_frame+100];
-rmse_pos_dict,rmse_vel_dict = compute_rmse(true_scene_list,imit_scene_list,id_list=veh_id_list);
-video_overlay_scenelists(imit_scene_list,true_scene_list,id_list=veh_id_list,roadway=f.roadway,filename="imit.mp4")
-
     # imitation trajectory with leaders using replay
+f = FilteringEnvironment()
+egoids = [28,29]
 new_models,final_particles,mean_dist = obtain_driver_models(f,egoids,30,1,30)
-scene_list_1 = imitation_with_replay(f,new_models,egoids=[28,29],replay_ids=[6,8,13])
-scene_list_2 = f.traj[1:length(scene_list_1)]
+start_frame = 1
+scene_list_1 = imitation_with_replay(f,new_models,egoids=egoids,replay_ids=[6,8,13],start_frame=start_frame)
+scene_list_2 = f.traj[start_frame:start_frame+length(scene_list_1)-1]
 video_overlay_scenelists(scene_list_1,scene_list_2,roadway=f.roadway,filename="replay_imit.mp4",id_list=[6,8,13,28,29])
+rmse_pos_dict,rmse_vel_dict = compute_rmse(scene_list_1,scene_list_2,id_list=egoids);
 end # testset Filtering

@@ -95,7 +95,8 @@ export
     plot_pairwise_particles,
     gen_imitation_traj,
     imitation_with_replay,
-    compute_rmse
+    compute_rmse,
+    rmse_dict2mean
 include("Filtering/utils.jl")
 
 end # End module

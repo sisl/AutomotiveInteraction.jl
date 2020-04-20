@@ -293,7 +293,7 @@ function compute_rmse(true_scene_list,imit_scene_list;id_list=[])
     for i in 1:length(true_scene_list)
         scene_halluc = imit_scene_list[i]
         demo_scene_target = true_scene_list[i]
-        
+
         for veh_id in id_list
             print("vehid = $veh_id\n")
             demo_veh = demo_scene_target[findfirst(veh_id,demo_scene_target)]
@@ -304,4 +304,40 @@ function compute_rmse(true_scene_list,imit_scene_list;id_list=[])
         end
     end
     return rmse_pos,rmse_vel
+end
+
+# function: Combine carwise rmse into one metric by averaging over cars
+"""
+    function rmse_dict2mean(rmse_dict)
+- Take dict of carwise rmse value and return an array with mean of rmse taken over cars
+
+# Returns
+- `carmean_rmse`: Vector with length same as num timesteps.
+Each element is the rmse value averaged over all cars at that particular timestep
+
+# Examples
+```julia
+rmse_pos_dict,rmse_vel_dict = compute_rmse(scene_list_1,scene_list_2,id_list=egoids)
+rmse_pos = rmse_dict2mean(rmse_pos_dict);rmse_vel = rmse_dict2mean(rmse_vel_dict)
+rmse_pos = reshape(rmse_pos,length(rmse_pos),);rmse_vel = reshape(rmse_vel,length(rmse_vel),)
+p_pos = PGFPlots.Plots.Linear(collect(1:length(rmse_pos)),rmse_pos,legendentry="rmse pos")
+p_vel = PGFPlots.Plots.Linear(collect(1:length(rmse_vel)),rmse_vel,legendentry="rmse vel")
+rmse_axis = PGFPlots.Axis([p_pos,p_vel],xlabel="timestep",ylabel="rmse",title="rmse pos and vel")
+display(rmse_axis)
+```
+"""
+function rmse_dict2mean(rmse_dict)
+    num_veh = length(collect(keys(rmse_dict))) # Find length of the vector of keys
+    num_iter = length(rmse_dict[collect(keys(rmse_dict))[1]]) # Find length of value contained in 1st key
+    rmse_array = fill(0.,num_iter,num_veh)
+
+    i = 0
+    for (k,v) in rmse_dict
+        i = i+1
+        rmse_vals = reshape(v,length(v),1)
+        rmse_array[:,i] = rmse_vals
+    end
+
+    carmean_rmse = mean(rmse_array,dims=2)
+    return carmean_rmse
 end

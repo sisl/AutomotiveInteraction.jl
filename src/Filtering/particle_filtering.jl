@@ -70,7 +70,7 @@ function hallucinate_a_step(f::FilteringEnvironment,scene_input,particle;car_id=
     end
 
     nticks = 1
-    scene_list = simulate(scene,f.roadway,models,nticks,INTERACTION_TIMESTEP)
+    scene_list = simulate(scene,f.roadway,models,nticks,f.timestep)
 
     new_scene = scene_list[2] # simulate stores start scene in 1st elem
     # Thus, we need elem 2 as the hallucinated scene
@@ -168,7 +168,9 @@ final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_fram
 ```
 """
 function multistep_update(f::FilteringEnvironment;car_id,start_frame,last_frame,num_p=500,seed=1)
-    limits = [10. 40.;0.1 10.;0.5 5.;1. 10.;0. 1.;-1. 1.;0. 20.;0. 1.]
+    start_scene = f.traj[start_frame]
+    v = start_scene[findfirst(car_id,start_scene)].state.v
+    limits = [v-2 v+2;0.1 5.;0.5 5.;1. 10.;0. 1.;-1. 1.;0. 1.;0. 1.]
     p_mat = initial_pmat(limits=limits,num_particles=num_p,seed=seed)
     iterwise_p_set = [] # Stores particle set at every iteration
     push!(iterwise_p_set,p_mat)
