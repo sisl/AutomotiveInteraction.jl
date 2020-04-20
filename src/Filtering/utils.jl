@@ -158,6 +158,35 @@ function plot_pairwise_particles(iterwise_p_mat;filename)
     return nothing
 end
 
+"""
+Plot specific pair of parameters eg: v_des vs cooperation
+
+# Examples
+```julia
+plotspecific(iterwise_p_mat;filename="test/media/vdes_coop.gif")
+```
+"""
+function plotspecific(iterwise_p_mat;filename)
+    plots=PGFPlots.Axis[]
+    param_names = Dict(1=>"Desired velocity",2=>"Acceleration output noise",
+        3=>"Min time headway",4=>"Min separation",5=>"Politeness",6=>"Advantage threshold",
+        7=>"Headway sensor noise",8=>"Cooperation");
+
+    name_1 = param_names[1] # 1 is for desired velocity
+    name_2 = param_names[8] # 8 is for cooperation
+
+    for i in 1:length(iterwise_p_mat)
+        p_mat = iterwise_p_mat[i]
+        
+        p = PGFPlots.Axis([PGFPlots.Plots.Scatter(p_mat[1,:],p_mat[8,:])],
+        xlabel=name_1,ylabel=name_2)
+        push!(plots,p)
+    end
+
+    pgfplots2gif(plots,filename=filename)
+    return nothing
+end
+
 """ 
     function avg_dist_particles(p_mat,p_fin)
 

@@ -1,5 +1,3 @@
-const INTERACTION_TIMESTEP = 0.1 # unit is second
-
 """
 INTERACTIONTrajdata
 The trajectory data stored in the original INTERACTION dataset format.
@@ -278,7 +276,7 @@ function sample_simultaneous_vehs
 - Adapted from `ngsim/julia/src/ngsim_utils.jl`
 
 # Inputs
-- timestamped_trajscenes: What we get from extract_timespan i.e. dict with vehid and ts, te
+- timestamped_trajscenes: What we get from `extract_timespan` i.e. dict with vehid and ts, te
 
 # Returns
 - `egoids`: List of vehicles that drive together with the specified ego vehicle for `offset` num of steps
@@ -303,14 +301,13 @@ function sample_simultaneous_vehs(
     if rseed != nothing
         Random.seed!(rseed)
     end
-    traj_idx = 1
     
     trajinfos = timestamped_trajscenes
     
     # if passed in egoid and traj_idx, use those, otherwise, sample
     if egoid == nothing 
         # sample the first vehicle and start and end timesteps
-        egoid = rand(collect(keys(trajinfos[traj_idx])))
+        egoid = rand(collect(keys(trajinfos)))
     end
     
     ts = trajinfos[egoid]["ts"]

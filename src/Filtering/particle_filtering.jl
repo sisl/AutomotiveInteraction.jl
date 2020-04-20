@@ -50,9 +50,9 @@ end
 
 # Examples
 ```julia
-limits = [10. 40.;0.1 10.;0.5 5.;1. 10.;0. 1.;-1. 1.;0. 20.]
-init_pmat = initial_pmat(limits=limits,num_particles=10,seed=4)
-hallucinate_a_step(SCENE,init_pmat[:,9],car_id=1)
+scene = f.traj[1]
+particle = [29.,NaN,1.5,5.,0.35,0.1,NaN,1.0]
+hallucinate_a_step(f,scene,particle,car_id=6)
 ```
 """
 function hallucinate_a_step(f::FilteringEnvironment,scene_input,particle;car_id=-1)
@@ -95,11 +95,11 @@ end
 limits = [10. 40.;0.1 10.;0.5 5.;1. 10.;0. 1.;-1. 1.;0. 20.;0. 1.]
 init_pmat = initial_pmat(limits=limits,num_particles=10,seed=4)
 id = 6
-scene = traj_ext[1]
-true_next_scene = deepcopy(traj_ext[2])
+scene = f.traj[1]
+true_next_scene = deepcopy(f.traj[2])
 true_nextpos = get_frenet_s(true_next_scene;car_id=id)
 true_nextlane = get_lane_id(true_next_scene,id)
-weight_and_resample(scene,true_nextpos,true_nextlane,init_pmat,car_id=id,roadway=road_ext)
+weight_and_resample(f,scene,true_nextpos,true_nextlane,init_pmat,car_id=id)
 ```
 """
 function weight_and_resample(f::FilteringEnvironment,start_scene,true_nextpos,true_nextlane,p_mat;

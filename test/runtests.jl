@@ -34,21 +34,6 @@ end
 @testset "Filtering" begin
 f = FilteringEnvironment()
 
-    # hallucinate_a_step
-# scene = f.traj[1]
-# particle = [29.,NaN,1.5,5.,0.35,0.1,NaN,1.0]
-# hallucinate_a_step(f,scene,particle,car_id=6)
-
-#     # weight and resample
-# limits = [10. 40.;0.1 10.;0.5 5.;1. 10.;0. 1.;-1. 1.;0. 20.;0. 1.]
-# init_pmat = initial_pmat(limits=limits,num_particles=10,seed=4)
-# id = 6
-# scene = f.traj[1]
-# true_next_scene = deepcopy(f.traj[2])
-# true_nextpos = get_frenet_s(true_next_scene;car_id=id)
-# true_nextlane = get_lane_id(true_next_scene,id)
-# weight_and_resample(f,scene,true_nextpos,true_nextlane,init_pmat,car_id=id)
-
     # multistep_update
 final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_frame=50,num_p=100);
 # Reel.extension(m::MIME"image/svg+xml") = "svg"
@@ -63,4 +48,8 @@ scene_list_1 = imitation_with_replay(f,new_models,egoids=egoids,replay_ids=[6,8,
 scene_list_2 = f.traj[start_frame:start_frame+length(scene_list_1)-1]
 video_overlay_scenelists(scene_list_1,scene_list_2,roadway=f.roadway,filename="replay_imit.mp4",id_list=[6,8,13,28,29])
 rmse_pos_dict,rmse_vel_dict = compute_rmse(scene_list_1,scene_list_2,id_list=egoids);
+
+    # Sample vehicles that drive together
+timestamped_trajscenes = extract_timespan(f.traj)
+sample_simultaneous_vehs(10,50,timestamped_trajscenes,egoid=6)
 end # testset Filtering
