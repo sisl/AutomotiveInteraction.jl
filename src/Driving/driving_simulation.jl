@@ -225,7 +225,7 @@ scene_list = run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway
 ```
 """
 function run_vehicles(;id_list=[],start_frame=1,duration=10.,filename="",traj,roadway,nomergeoverlay=true)
-
+    INTERACTION_TIMESTEP = 0.1
     scene_real = traj[start_frame]
     if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
 
@@ -261,6 +261,7 @@ filename = "julia_notebooks/media/compare_startframe.mp4")
 ```
 """
 function compare2truth(;id_list=[],start_frame,duration=10,traj,roadway,filename)
+    INTERACTION_TIMESTEP = 0.1
     scene_list_1 = run_vehicles(id_list=id_list,start_frame=start_frame,duration=duration,
     traj=traj,roadway=roadway)
     nticks = Int(ceil(duration/INTERACTION_TIMESTEP))

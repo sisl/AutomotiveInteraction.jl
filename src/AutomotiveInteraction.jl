@@ -98,7 +98,9 @@ export
     gen_imitation_traj,
     imitation_with_replay,
     compute_rmse,
-    rmse_dict2mean
+    rmse_dict2mean,
+    collision_check,
+    test_collision
 include("Filtering/utils.jl")
 
 end # End module

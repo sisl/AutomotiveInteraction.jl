@@ -230,6 +230,8 @@ end
 """
 - Idea is to have leader vehicles that are replayed from the data
 - models has driver model associated to vehicles in id_list
+- Not using `simulate` because we want to customize it. Thus use observe, propogate
+- And then inserting the replay vehicles within the scene
 
 # Example
 ```julia
@@ -369,4 +371,62 @@ function rmse_dict2mean(rmse_dict)
 
     carmean_rmse = mean(rmse_array,dims=2)
     return carmean_rmse
+end
+
+# Function: Test collisons for list of vehicle ids
+"""
+- Adapt the get collision to work with vehicle ids and give us collision metrics within notebook
+- Source: `AutomotiveDrivingModels/src/Collision-Checkers/Minkowski.jl`
+
+# Example
+```julia
+f = FilteringEnvironment()
+c = collision_check(f.traj[1],[6,8])
+c.is_colliding
+```
+"""
+function collision_check(scene, veh_id_list, mem::CPAMemory=CPAMemory())
+
+    N = length(veh_id_list)
+    for (a,A) in enumerate(veh_id_list)
+        vehA = scene[findfirst(A,scene)]
+        to_oriented_bounding_box!(mem.vehA, vehA)
+        for b in a +1 : length(veh_id_list)
+            B = veh_id_list[b]
+            vehB = scene[findfirst(B,scene)]
+            if is_potentially_colliding(vehA, vehB)
+                to_oriented_bounding_box!(mem.vehB, vehB)
+                if is_colliding(mem)
+                    return CollisionCheckResult(true, A, B)
+                end
+            end
+        end
+    end
+
+    CollisionCheckResult(false, 0, 0)
+end
+
+# function: Find the collisions instances to extract collision metrics
+"""
+    function test_collision
+- Assess list of scenes for collision information
+
+# Returns
+- Binary array with 0 if no collision at that timestep, and 1 if any collision at that timestep
+
+# Examples
+```julia
+
+```
+"""
+function test_collision(scenes_list,id_list)
+    
+    collisions_array = fill(0.,length(scenes_list))
+    
+    for (i,scene) in enumerate(scenes_list)
+        if collision_check(scene,id_list).is_colliding
+            collisions_array[i] = 1
+        end
+    end 
+    return collisions_array
 end
