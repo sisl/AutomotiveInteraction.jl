@@ -326,7 +326,7 @@ function compute_rmse(true_scene_list,imit_scene_list;id_list=[])
         demo_scene_target = true_scene_list[i]
 
         for veh_id in id_list
-            print("vehid = $veh_id\n")
+            #print("vehid = $veh_id\n")
             demo_veh = demo_scene_target[findfirst(veh_id,demo_scene_target)]
             ego_veh = scene_halluc[findfirst(veh_id,scene_halluc)]
 
@@ -370,6 +370,7 @@ function rmse_dict2mean(rmse_dict)
     end
 
     carmean_rmse = mean(rmse_array,dims=2)
+    carmean_rmse = reshape(carmean_rmse,length(carmean_rmse),)
     return carmean_rmse
 end
 

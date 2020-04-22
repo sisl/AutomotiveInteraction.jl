@@ -176,7 +176,7 @@ function multistep_update(f::FilteringEnvironment;car_id,start_frame,last_frame,
     push!(iterwise_p_set,p_mat)
     
     for framenum in start_frame:last_frame
-        print("frame number = $(framenum)\n")
+        #print("frame number = $(framenum)\n")
         scene = deepcopy(f.traj[framenum])
         true_next_scene = deepcopy(f.traj[framenum+1])
         true_nextpos = get_frenet_s(true_next_scene;car_id=car_id)
@@ -202,7 +202,7 @@ function multistep_update(f::FilteringEnvironment;car_id,start_frame,last_frame,
 end
 
 """
-    function obtain_driver_models(veh_id_list,num_particles,start_frame,last_frame)
+    function obtain_driver_models(f::FilteringEnvironment,veh_id_list,num_particles,start_frame,last_frame)
 Driver models for each vehicle in veh_id_list
 
 # Arguments
