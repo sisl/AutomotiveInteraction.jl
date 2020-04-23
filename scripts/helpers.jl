@@ -1,5 +1,5 @@
 # This file provides helper functions to run experiments
-
+using Distributions # provides `mean`: to compute mean of particle dist over cars
 """
 function extract_metrics(f;ts=1,id_list=[],dur=10.,modelmaker=nothing,filename=[])
 
@@ -28,8 +28,15 @@ function extract_metrics(f;ts=1,id_list=[],dur=10.,modelmaker=nothing,filename=[
     # Otherwise, obtaine driver models using particle filtering
     models = Dict{Int64,DriverModel}()
     if isnothing(modelmaker)
-        print("Let's run particle filtering to create driver models")
-        models, = obtain_driver_models(f,id_list,50,ts,ts+50)
+        print("Let's run particle filtering to create driver models\n")
+        models,p,mean_dist_mat = obtain_driver_models(f,veh_id_list=id_list,num_p=50,ts=ts,te=ts+50)
+        avg_over_cars = mean(mean_dist_mat,dims=2)
+        avg_over_cars = reshape(avg_over_cars,length(avg_over_cars),) # for PGFPlot
+        print("Making filtering progress plot\n")
+        p = PGFPlots.Plots.Linear(collect(1:length(avg_over_cars)),avg_over_cars)
+        ax = PGFPlots.Axis([p],xlabel = "iternum",ylabel = "avg distance",
+        title = "Filtering progress")
+        PGFPlots.save("media/p_prog.pdf",ax)
     else
         print("Lets use idm or c_idm to create driver models\n")
         models = modelmaker(scene_real)

@@ -189,15 +189,33 @@ end
 
 """ 
     function avg_dist_particles(p_mat,p_fin)
-
-- Compute the avg distance over particle set from final particle
+- Goal is to show that particle filering converges
+- `p_mat` is a matrix with particles in every column, say at a certain iteration before convergence
+- `p_fin` is the mean of the final particle set i.e. after convergence
+- For every particle in `p_mat`, find its norm to `p_fin`. And return the mean of these distances 
 
 # Arguments
 - `p_mat`: Matrix with particles in every column
-- `p_fin`: 2x1 array with the final particle
+- `p_fin`: num_paramx1 vector with the final particle
+
+# Example
+```julia
+num_iter = length(iterwise_p_mat)
+mean_dist_array = fill(0.,num_iter,1)
+for i in 1:num_iter
+    p_mat = iterwise_p_mat[i]
+    mean_dist_array[i] = avg_dist_particles(p_mat,p_fin)
+end
+```
 """
 function avg_dist_particles(p_mat,p_fin)
-    return sum(sqrt.(sum((p_mat .- p_fin).^2,dims=1)))*1/size(p_mat,2)
+    val = 0
+    num_particles = size(p_mat,2)
+    for i in 1:num_particles # loop over the particles
+        val+= norm(p_mat[:,i]-p_fin) # add norm distance to final particle
+    end
+    return val/num_particles # find mean of the norm distance to final particles
+    #return sum(sqrt.(sum((p_mat .- p_fin).^2,dims=1)))*1/size(p_mat,2)
 end
 
 # function: generate imitation trajectory

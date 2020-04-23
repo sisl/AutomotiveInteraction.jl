@@ -34,12 +34,7 @@ export
     test_jumpy_vehicle
 include("Driving/driving_simulation.jl")
 
-export 
-    append_to_curve!,
-    get_new_angle,
-    bound_heading,
-    append_headings,
-    centerlines_txt2tracks,
+export
     make_roadway_interaction,
     make_roadway_ngsim,
     make_roadway_interaction_with_extensions,
@@ -91,8 +86,6 @@ export
 include("Filtering/particle_filtering.jl")
 
 export
-    get_frenet_s,
-    get_lane_id,
     initial_pmat,
     plot_pairwise_particles,
     gen_imitation_traj,

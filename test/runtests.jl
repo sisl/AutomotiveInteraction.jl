@@ -42,7 +42,8 @@ final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_fram
     # imitation trajectory with leaders using replay
 f = FilteringEnvironment()
 egoids = [28,29]
-new_models,final_particles,mean_dist = obtain_driver_models(f,egoids,30,1,30)
+new_models,final_particles,mean_dist_mat = obtain_driver_models(f,veh_id_list=egoids,
+    num_p=30,ts=1,te=30)
 start_frame = 1
 scene_list_1 = imitation_with_replay(f,new_models,egoids=egoids,replay_ids=[6,8,13],start_frame=start_frame)
 scene_list_2 = f.traj[start_frame:start_frame+length(scene_list_1)-1]

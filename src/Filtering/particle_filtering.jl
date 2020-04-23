@@ -206,9 +206,10 @@ end
 Driver models for each vehicle in veh_id_list
 
 # Arguments
-- `veh_id_list` List with vehicle ids
-- `start_frame` Frame to start filtering from
-- `last_frame` Frame to end hallucination at
+- `veh_id_list`: List with vehicle ids
+- `num_p`: Number of particles
+- `ts`: Frame to start filtering from
+- `te`: Frame to end hallucination at
 
 # Returns
 - `models` Dict with veh id as key and IDM driver model as value
@@ -219,18 +220,18 @@ Driver models for each vehicle in veh_id_list
 ```julia
 veh_id_list = [6]
 f = FilteringEnvironment()
-new_models,final_particles,mean_dist = obtain_driver_models(f,veh_id_list,500,1,5)
+new_models,final_particles,mean_dist_mat = obtain_driver_models(f,veh_id_list=veh_id_list,num_p=50,ts=1,te=5)
+avg_over_cars = mean(mean_dist_mat,dims=2)
 ```
 """
-function obtain_driver_models(f::FilteringEnvironment,veh_id_list,num_particles,
-    start_frame,last_frame)
+function obtain_driver_models(f::FilteringEnvironment;veh_id_list=[],num_p=50,ts=1,te=100)
     
     models = Dict{Int64,DriverModel}() # key is vehicle id, value is driver model
     final_particles = Dict{Int64,Array{Float64}}() # key is vehicle id, value is final particles
     
-        # Loop over all the cars and get their corresponding IDM parameters by particle filter
+        # Loop over all the cars and get their corresponding parameters by particle filter
     num_cars = length(veh_id_list)
-    num_iters = last_frame-start_frame+2 # NEED TO CONFIRM THIS
+    num_iters = te-ts+2 # NEED TO CONFIRM THIS
     
         # num_iters x num_cars. Every elem is the mean dist of particle set at that iter for that car
     mean_dist_mat = fill(0.,num_iters,num_cars)
@@ -238,8 +239,8 @@ function obtain_driver_models(f::FilteringEnvironment,veh_id_list,num_particles,
     for (ii,veh_id) in enumerate(veh_id_list)
         print("obtain_driver_models. vehicle id = $(veh_id) \n")
         
-        mean_particle, iterwise_p_set = multistep_update(f,num_p=num_particles,
-                car_id = veh_id,start_frame = start_frame,last_frame = last_frame)
+        mean_particle, iterwise_p_set = multistep_update(f,num_p=num_p,
+                car_id = veh_id,start_frame = ts,last_frame = te)
         #print("mean_particle", mean_particle, "\n")
         
         final_particles[veh_id] = mean_particle
@@ -250,16 +251,11 @@ function obtain_driver_models(f::FilteringEnvironment,veh_id_list,num_particles,
         # num_iters = length(iterwise_p_set) # SHOULD MATCH OUTSIDE LOOP VARIABLE
         mean_dist_over_iters = fill(0.,num_iters,1)
         for (jj,p_mat) in enumerate(iterwise_p_set)
-            current_mean_particle = mean(p_mat,dims=2)
-            mean_dist_over_iters[jj,1] = norm(current_mean_particle-mean_particle)
+            mean_dist_over_iters[jj,1] = avg_dist_particles(p_mat,mean_particle)
         end
         
         mean_dist_mat[:,ii] = mean_dist_over_iters    
     end
-    
-        # Average over the cars and plot the filtering progress over frames
-    # avg_over_cars = mean(mean_dist_mat,dims=2)
-    # plot(avg_over_cars)
     
     return models, final_particles, mean_dist_mat
 end

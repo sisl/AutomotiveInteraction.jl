@@ -14,17 +14,22 @@ veh_id_list = [34,37,40,42,43,49,50];ts=88
 
 print("Get the metrics for particle filering\n")
 pos_pf,vel_pf,collisions_pf = extract_metrics(f,ts=ts,id_list=veh_id_list,
-filename="media/pf_ts_88.mp4")
+#filename="media/pf_ts_88.mp4"
+)
 
 print("Get the metrics for c-idm\n")
 pos_cidm,vel_cidm,collisions_cidm = extract_metrics(f,ts=ts,id_list=veh_id_list,
-modelmaker=make_cidm_models,filename="media/cidm_ts_88.mp4")
+modelmaker=make_cidm_models,
+filename="media/cidm_ts_88.mp4"
+)
 
 print("Get the metrics for idm\n")
 pos_idm,vel_idm,collisions_idm = extract_metrics(f,ts=ts,id_list=veh_id_list,
-modelmaker=make_IDM_models,filename="media/idm_ts_88.mp4")
+modelmaker=make_IDM_models,
+filename="media/idm_ts_88.mp4"
+)
 
-make_plots=true
+make_plots=false
 if(make_plots)
     # Make rmse_pos plot
     p_pos_pf = pgfplot_vector(pos_pf,leg="pf");
