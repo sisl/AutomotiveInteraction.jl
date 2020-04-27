@@ -1,16 +1,22 @@
-# This file provides helper functions to run experiments
+"""
+helpers.jl
+This file provides helper functions to experiments.jl, the experiment script
+"""
+
 using Distributions # provides `mean`: to compute mean of particle dist over cars
+using JLD # to save models
+
 """
 function extract_metrics(f;ts=1,id_list=[],dur=10.,modelmaker=nothing,filename=[])
 
 - Perform driving simulation starting from `ts` for `dur` duration.
 
 # Arguments
-- ts: start frame
-- id_list: list of vehicles 
-- dur: duration
-- modelmaker: function that makes the models
-- filename: provide optionally to make comparison video
+- `ts`: start frame
+- `id_list`: list of vehicles 
+- `dur`: duration
+- `modelmaker`: function that makes the models
+- `filename`: provide optionally to make comparison video
 
 # Example
 ```julia
@@ -30,16 +36,23 @@ function extract_metrics(f;ts=1,id_list=[],dur=10.,modelmaker=nothing,filename=[
     if isnothing(modelmaker)
         print("Let's run particle filtering to create driver models\n")
         models,p,mean_dist_mat = obtain_driver_models(f,veh_id_list=id_list,num_p=50,ts=ts,te=ts+50)
-        avg_over_cars = mean(mean_dist_mat,dims=2)
-        avg_over_cars = reshape(avg_over_cars,length(avg_over_cars),) # for PGFPlot
-        print("Making filtering progress plot\n")
-        p = PGFPlots.Plots.Linear(collect(1:length(avg_over_cars)),avg_over_cars)
-        ax = PGFPlots.Axis([p],xlabel = "iternum",ylabel = "avg distance",
-        title = "Filtering progress")
-        PGFPlots.save("media/p_prog.pdf",ax)
+        
+        # Particle filtering progress plot
+        progressplot=false
+        if progressplot
+            avg_over_cars = mean(mean_dist_mat,dims=2)
+            avg_over_cars = reshape(avg_over_cars,length(avg_over_cars),) # for PGFPlot
+            print("Making filtering progress plot\n")
+            p = PGFPlots.Plots.Linear(collect(1:length(avg_over_cars)),avg_over_cars)
+            ax = PGFPlots.Axis([p],xlabel = "iternum",ylabel = "avg distance",
+            title = "Filtering progress")
+            PGFPlots.save("media/p_prog.pdf",ax)
+        end
+        # Save models
+        JLD.save("filtered_models.jld","models",models)
     else
         print("Lets use idm or c_idm to create driver models\n")
-        models = modelmaker(scene_real)
+        models = modelmaker(f,scene_real)
     end
 
     nticks = Int(ceil(dur/f.timestep))
@@ -48,7 +61,7 @@ function extract_metrics(f;ts=1,id_list=[],dur=10.,modelmaker=nothing,filename=[
     c_array = test_collision(scene_list,id_list)
 
     truth_list = f.traj[ts:ts+nticks]
-    
+
     # Make a comparison video if filename provided
     if !isempty(filename)
         video_overlay_scenelists(scene_list,truth_list,id_list=id_list,roadway=f.roadway,

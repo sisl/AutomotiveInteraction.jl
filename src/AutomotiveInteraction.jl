@@ -19,12 +19,17 @@ using LinearAlgebra # Form norm calculation for iterwise particle dist
 using Combinatorics # make param pairs for filtering progress pairwise plots
 using PGFPlots
 
+export
+    MergingEnvironment,
+    MergingEnvironmentLower,
+    FilteringEnvironment
+include("Driving/environment.jl")
+
 export 
     keep_vehicle_subset!,
     make_def_models,
     make_IDM_models,
     make_cidm_models,
-    make_iidm_models,
     make_TimLaneChanger_models,
     get_hallucination_scenes,
     run_vehicles,
@@ -63,12 +68,6 @@ export
 include("Driving/visualization.jl")
 
 export
-    MergingEnvironment,
-    main_lane,
-    merge_lane
-include("Driving/environment.jl")
-
-export
     CooperativeIDM,
     find_merge_vehicle
 include("Driving/cooperative_IDM.jl")
@@ -78,7 +77,6 @@ export
 include("Driving/overlays.jl")
 
 export
-    FilteringEnvironment,
     hallucinate_a_step,
     weight_and_resample,
     multistep_update,

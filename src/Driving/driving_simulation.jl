@@ -1,3 +1,11 @@
+"""
+driving_simulation.jl
+
+Provides functions to perform simulations such as assigning driver models to 
+vehicles, and running driving simulations
+"""
+
+
 # function: keep subset of vehicles in the scene
 """
     function keep_vehicle_subset!(scene::Scene, ids::Vector{Int})
@@ -117,10 +125,10 @@ scene = get_scene(traj_interaction)
 models = make_TimLaneChanger_models(scene)
 ```
 """
-function make_TimLaneChanger_models(scene)
+function make_TimLaneChanger_models(f::FilteringEnvironment,scene)
     models = Dict{Int64,DriverModel}()
     for veh in scene
-        models[veh.id] = Tim2DDriver(INTERACTION_TIMESTEP,mlane=TimLaneChanger(INTERACTION_TIMESTEP))
+        models[veh.id] = Tim2DDriver(f.timestep,mlane=TimLaneChanger(f.timestep))
     end
     return models
 end
@@ -130,7 +138,7 @@ end
     function make_IDM_models(scene)
 - Assign default parameter IDM to all vehicles in the scene
 """
-function make_IDM_models(scene)
+function make_IDM_models(f::FilteringEnvironment,scene)
     print("IDM models being made\n")
     models=Dict{Int64,DriverModel}()
     for veh in scene
@@ -142,25 +150,14 @@ end
 """
     function make_cidm_models(scene)
 - Assign cooperative IDM as driver model to all vehicles in the scene
+- `f` provides access to specific scenario i.e upper merge vs lower merge
+- Associated merge and main lane lane tags differ accordingly
 """
-function make_cidm_models(scene)
+function make_cidm_models(f::FilteringEnvironment,scene)
     print("c-IDM models being assigned to vehicles\n")
     models = Dict{Int64,DriverModel}()
     for veh in scene
-        models[veh.id] = CooperativeIDM(c=1.0)
-    end
-    return models
-end
-
-"""
-    function make_iidm_models(scene)
-- Assign intruder IDM as driver model to all vehicles in the scene
-"""
-function make_iidm_models(scene)
-    print("i-idm models being assigned to vehicles \n")
-    models = Dict{Int64,DriverModel}()
-    for veh in scene
-        models[veh.id] = IntruderIDM(idm=IntelligentDriverModel())
+        models[veh.id] = CooperativeIDM(env=f.mergeenv,c=1.0)
     end
     return models
 end

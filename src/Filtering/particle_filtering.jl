@@ -3,24 +3,6 @@ const V_DES = 1; const SIGMA_IDM = 2; const T_HEADWAY = 3; const S_MIN=4;
 const POLITENESS = 5;const ADV_TH = 6;const SENSOR_SIGMA = 7;
 const COOPERATION = 8;    
 
-# struct: FilteringEnvironment
-"""
-@with_kw struct FilteringEnvironment
-
-- Contains the roadway and trajectory information 
-- To enable not having to pass roadway and traj as input args to all functions
-
-# Example
-```julia
-f = FilteringEnvironment()
-```
-"""
-@with_kw struct FilteringEnvironment
-    roadway::Roadway{Float64} = make_roadway_interaction_with_extensions()
-    traj = read_veh_tracks(roadway=roadway)
-    timestep::Float64 = 0.1
-end
-
 # function: particle to c-IDM model
 """
 function cidm_from_particle(particle)
@@ -32,8 +14,9 @@ function cidm_from_particle(particle)
 # See hallucinate_a_step
 ```
 """
-function cidm_from_particle(particle)
+function cidm_from_particle(f::FilteringEnvironment,particle)
     return CooperativeIDM(
+                env=f.mergeenv,
                 c=particle[COOPERATION],
                 idm = IntelligentDriverModel(
                             v_des = particle[V_DES],
@@ -63,7 +46,7 @@ function hallucinate_a_step(f::FilteringEnvironment,scene_input,particle;car_id=
 
     for veh in scene
         if veh.id == car_id
-            models[veh.id] = cidm_from_particle(particle)
+            models[veh.id] = cidm_from_particle(f,particle)
         else
             models[veh.id] = IntelligentDriverModel(v_des=15.)
         end
@@ -245,7 +228,7 @@ function obtain_driver_models(f::FilteringEnvironment;veh_id_list=[],num_p=50,ts
         
         final_particles[veh_id] = mean_particle
             # note: T=0.2 and s_min=1.
-        models[veh_id] = cidm_from_particle(mean_particle)
+        models[veh_id] = cidm_from_particle(f,mean_particle)
         
         #print("After filtering mean_particle = $(mean_particle)\n")        
         # num_iters = length(iterwise_p_set) # SHOULD MATCH OUTSIDE LOOP VARIABLE
