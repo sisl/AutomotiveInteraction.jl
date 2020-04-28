@@ -5,13 +5,38 @@
 using AutomotiveSimulator
 using AutomotiveInteraction
 using PGFPlots
+using JLD
 
 include("helpers.jl")
 
-f = FilteringEnvironment()
-#veh_id_list = [4,6,8,13,19,28,29];ts=1
-#veh_id_list = [34,37,40,42,43,49,50];ts=88
-veh_id_list = [64,68,70,74,77];ts=198
+# Scenarios for upper merge
+# List of tuples. Elem 1 of tuple is veh id list, elem 2 is list with ts and te
+scenarios_upper = [
+        ([6,8,13,19,28,29],[1,150]), #19,29 merge lane
+        ([34,37,40,42,43,49,50],[88,250]), #34,37,43,50 merge lane
+        ([59,60,62,66,67,71,73],[188,400]), #59,62,66,71 merge lane
+        ([66,67,71,73,76,82,88,92,95],[310,450]), #71,76,95 merge lane
+        ([187,191,193,194],[940,995]) #187,191,194 merge lane
+]
+
+# Scenarios for lower merge
+scenarios_lower = [
+        ([2,7,10,18,25],[1,30]), #7,25 merge vehicles
+        ([64,68,70,74,77],[198,230]), #70 merge lane
+        ([105,106,108,110],[382,430]), # 110 merge lane
+        ([176,177,178],[827,870]) #177 merge lane
+]
+
+# Run filtering and store resulting models to jld files
+s = scenarios_lower
+f = FilteringEnvironment(mergeenv=MergingEnvironmentLower())
+for i in 1:length(s)
+        veh_id_list = s[i][1]
+        ts = s[i][2][1]
+        te = s[i][2][2]
+        m,p,md = obtain_driver_models(f,veh_id_list=veh_id_list,num_p=50,ts=ts,te=te)
+        JLD.save("media/lower_$i.jld","m",m,"p",p,"md",md)
+end
 
 print("Get the metrics for particle filering\n")
 pos_pf,vel_pf,collisions_pf = extract_metrics(f,ts=ts,id_list=veh_id_list,
@@ -49,11 +74,6 @@ if(make_plots)
             title="Collision assessment");
     PGFPlots.save("media/coll.pdf",ax_coll)
 end
-
-#************More scenarios****************
-# Store RMSE and collision metrics from a multitude of scenarios
-# Average them all together lets say 15 scenarios
-
 
 #***********Train upper merge, test lower merge***********
 # Get the final particle set from upper merge i.e a matrix with particles in columns

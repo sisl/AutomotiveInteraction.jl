@@ -59,6 +59,9 @@ c = CooperativeIDM(env=MergingEnviornmentLower())
 """
 @with_kw struct MergingEnvironmentLower
     roadway::Roadway{Float64} = make_roadway_interaction_with_extensions()
+    merge_point::VecSE2{Float64} = VecSE2(1110.827, 944.598, 0.214)
+    merge_proj::RoadProjection{Int64, Float64} = proj(merge_point, roadway)
+    merge_index::RoadIndex{Int64, Float64} = RoadIndex(merge_proj.curveproj.ind, merge_proj.tag)
 end
 
 """

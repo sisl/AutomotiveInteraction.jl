@@ -40,11 +40,10 @@ export
 include("Driving/driving_simulation.jl")
 
 export
+    centerlines_txt2tracks,
     make_roadway_interaction,
     make_roadway_ngsim,
     make_roadway_interaction_with_extensions,
-    make_discont_roadway_straight,
-    make_discont_roadway_jagged,
     MergingRoadway,
     add_renderable!
 include("Data_Processing/roadway_building.jl")
