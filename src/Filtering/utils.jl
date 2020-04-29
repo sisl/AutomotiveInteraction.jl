@@ -1,3 +1,9 @@
+"""
+utils.jl
+
+Provides helper functions to `particle_filtering.jl` such as PGFPlots, rmse compute
+"""
+
 # function: get frenet s
 """
     function get_frenet_s(scene;car_id=-1)
@@ -333,18 +339,17 @@ function compute_rmse(true_scene_list,imit_scene_list;id_list=[])
     @assert length(true_scene_list) == length(imit_scene_list)
     rmse_pos = Dict{Int64,Vector{Float64}}()
     rmse_vel = Dict{Int64,Vector{Float64}}()
-    
+ 
     for veh_id in id_list
         rmse_pos[veh_id] = []
         rmse_vel[veh_id] = []
     end
-    
+
     for i in 1:length(true_scene_list)
         scene_halluc = imit_scene_list[i]
         demo_scene_target = true_scene_list[i]
 
         for veh_id in id_list
-            #print("vehid = $veh_id\n")
             demo_veh = demo_scene_target[findfirst(veh_id,demo_scene_target)]
             ego_veh = scene_halluc[findfirst(veh_id,scene_halluc)]
 

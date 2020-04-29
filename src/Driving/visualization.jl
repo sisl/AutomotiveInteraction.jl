@@ -5,16 +5,16 @@ Makes a video of the trajdata taking frame range as input
 
 # Example
 ```julia
-video_trajdata_replay(range=1:100,roadway=roadway,trajdata=traj_interaction,
-    filename=joinpath(@__DIR__,"../julia_notebooks/media/replay_vid.mp4")
+f = FilteringEnvironment()
+video_trajdata_replay(f,id_list=[2,7,10,18,25],range=1:30,filename="media/lower_1.gif")
 ```
 """
-function video_trajdata_replay(id_list = [];range=nothing,trajdata,roadway,filename)
+function video_trajdata_replay(f::FilteringEnvironment;id_list = [],range=nothing,filename)
     frames = Frames(MIME("image/png"), fps=10)
-    mr = MergingRoadway(roadway) # Wrapper for specialized render for merging lanes
+    mr = MergingRoadway(f.roadway) # Wrapper for specialized render for merging lanes
     mp = VecE2(1064.5227, 959.1559)
     for i in range
-        temp_scene = trajdata[i]
+        temp_scene = deepcopy(f.traj[i])
         if !isempty(id_list) keep_vehicle_subset!(temp_scene,id_list) end
         renderables = [
             mr,

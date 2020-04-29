@@ -6,15 +6,14 @@ using AutomotiveSimulator
 using AutomotiveVisualization
 # using Reel
 
-    # Test the replay video making
-video_trajdata_replay(range=1:100,trajdata=traj_ext,roadway=road_ext,
-filename="media/replay.mp4")
-
 f = FilteringEnvironment()
+
+    # Test the replay video making
+video_trajdata_replay(f,range=1:100,filename="media/replay.mp4")
+
     # Generate model driven traj and compare to ground truth visually
 id_list = [6,19,28,29,34,37,40,42,43,49,50]
-compare2truth(f,id_list=id_list,start_frame=101,traj=traj_ext,roadway=road_ext,
-filename = "media/compare.mp4")
+compare2truth(f,id_list=id_list,start_frame=101,filename = "media/compare.mp4")
 
     # multistep_update
 final_p_mat,iterwise_p_mat = multistep_update(f,car_id=6,start_frame=1,last_frame=50,num_p=100);

@@ -28,14 +28,18 @@ scenarios_lower = [
 ]
 
 # Run filtering and store resulting models to jld files
-s = scenarios_lower
-f = FilteringEnvironment(mergeenv=MergingEnvironmentLower())
+# s = scenarios_lower
+# f = FilteringEnvironment(mergeenv=MergingEnvironmentLower())
+
+s = scenarios_upper
+f = FilteringEnvironment()
 for i in 1:length(s)
         veh_id_list = s[i][1]
         ts = s[i][2][1]
         te = s[i][2][2]
         m,p,md = obtain_driver_models(f,veh_id_list=veh_id_list,num_p=50,ts=ts,te=te)
-        JLD.save("media/lower_$i.jld","m",m,"p",p,"md",md)
+        #JLD.save("media/lower_$i.jld","m",m,"p",p,"md",md,"veh_id_list",veh_id_list,"ts",ts,"te",te)
+        JLD.save("media/upper_$i.jld","m",m,"p",p,"md",md,"veh_id_list",veh_id_list,"ts",ts,"te",te)
 end
 
 print("Get the metrics for particle filering\n")
@@ -80,3 +84,13 @@ end
 # Select the mean, and two extremes say min norm and max norm
 # On the bottom merge, generate position, velocity, collision traces. And videos as well
 # And maybe also successful merges
+
+#**************Make scenario replay videos**************
+s = scenarios_upper
+for i in 1:length(s)
+        f = FilteringEnvironment()
+        veh_id_list = s[i][1]
+        ts = s[i][2][1]
+        te = s[i][2][2]
+        video_trajdata_replay(f,id_list=veh_id_list,range=ts:te,filename="media/upper_$i.gif")
+end

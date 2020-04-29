@@ -162,6 +162,27 @@ function make_cidm_models(f::FilteringEnvironment,scene)
     return models
 end
 
+"""
+function make_lm_models(f::FilteringEnvironment,scene)
+- Non linear least squares IDM fit from Jeremy paper
+
+# Examples
+```
+julia
+f = FilteringEnvironment()
+scene = deepcopy(f.traj[1])
+models = make_lm_models(f,scene)
+```
+"""
+function make_lm_models(f::FilteringEnvironment,scene)
+    print("LM-idm models being assigned to vehicles\n")
+    models = Dict{Int64,DriverModel}()
+    for veh in scene
+        models[veh.id] = IntelligentDriverModel(v_des=17.837,s_min=5.249,T=0.918,a_max=0.758,d_cmf=3.811)
+    end
+    return models
+end
+
 # function: get hallucination scenes
 """
     function get_hallucination_scenes
@@ -221,8 +242,7 @@ scene_list = run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway
     filename=joinpath(@__DIR__,"julia_notebooks/media/run_test_ext_long.mp4"))
 ```
 """
-function run_vehicles(f::FilteringEnvironment;id_list=[],
-start_frame=1,duration=10.,filename="",traj,roadway,nomergeoverlay=true)
+function run_vehicles(f::FilteringEnvironment;id_list=[],start_frame=1,duration=10.,filename="",nomergeoverlay=true)
     
     scene_real = traj[start_frame]
     if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
@@ -231,14 +251,14 @@ start_frame=1,duration=10.,filename="",traj,roadway,nomergeoverlay=true)
 
     #scene_list = get_hallucination_scenes(scene_real,models=models,id_list=id_list,duration=duration,roadway=roadway)
     nticks = Int(ceil(duration/f.timestep))
-    scene_list = simulate(scene_real,roadway,models,nticks,f.timestep)
+    scene_list = simulate(scene_real,f.roadway,models,nticks,f.timestep)
 
     if filename != ""
         if nomergeoverlay
-            scenelist2video(scene_list,filename=filename,roadway=roadway)
+            scenelist2video(scene_list,filename=filename,roadway=f.roadway)
         else
             print("Making merge overlay\n")
-            scenelist2video_mergeoverlay(scene_list,filename=filename,roadway=roadway)
+            scenelist2video_mergeoverlay(scene_list,filename=filename,roadway=f.roadway)
         end
     end
     return scene_list
@@ -259,13 +279,12 @@ filename = "julia_notebooks/media/compare_startframe.mp4")
 ```
 """
 function compare2truth(f::FilteringEnvironment;id_list=[],
-start_frame,duration=10,traj,roadway,filename)
-    scene_list_1 = run_vehicles(id_list=id_list,start_frame=start_frame,duration=duration,
-    traj=traj,roadway=roadway)
+start_frame,duration=10,filename)
+    scene_list_1 = run_vehicles(f,id_list=id_list,start_frame=start_frame,duration=duration)
     nticks = Int(ceil(duration/f.timestep))
     scene_list_2 = traj[start_frame:start_frame+nticks]
     video_overlay_scenelists(scene_list_1,scene_list_2,id_list=id_list,
-    roadway=roadway,filename=filename)
+    roadway=f.roadway,filename=filename)
     return nothing
 end
 
