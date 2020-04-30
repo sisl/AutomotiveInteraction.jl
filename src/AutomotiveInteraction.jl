@@ -30,6 +30,7 @@ export
     make_def_models,
     make_IDM_models,
     make_cidm_models,
+    make_lmidm_models,
     make_TimLaneChanger_models,
     get_hallucination_scenes,
     run_vehicles,
@@ -89,8 +90,9 @@ export
     imitation_with_replay,
     compute_rmse,
     rmse_dict2mean,
-    collision_check,
-    test_collision
+    pgfplot_vector,
+    truncate_vecs,
+    pad_zeros
 include("Filtering/utils.jl")
 
 end # End module

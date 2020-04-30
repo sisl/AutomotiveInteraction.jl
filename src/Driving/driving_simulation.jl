@@ -174,7 +174,7 @@ scene = deepcopy(f.traj[1])
 models = make_lm_models(f,scene)
 ```
 """
-function make_lm_models(f::FilteringEnvironment,scene)
+function make_lmidm_models(f::FilteringEnvironment,scene)
     print("LM-idm models being assigned to vehicles\n")
     models = Dict{Int64,DriverModel}()
     for veh in scene
@@ -244,7 +244,7 @@ scene_list = run_vehicles(id_list=[29,19,28,6,8,25,2,10,7,18,12],roadway=roadway
 """
 function run_vehicles(f::FilteringEnvironment;id_list=[],start_frame=1,duration=10.,filename="",nomergeoverlay=true)
     
-    scene_real = traj[start_frame]
+    scene_real = deepcopy(f.traj[start_frame])
     if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
 
     models = make_cidm_models(f,scene_real)

@@ -454,3 +454,95 @@ function test_collision(scenes_list,id_list)
     end 
     return collisions_array
 end
+
+"""
+function pgfplot_vector(vec;leg = "nolegend")
+
+- Plot a vector using PGFPlots
+
+# Example
+```julia
+plot_rmse_pf = pgfplot_vector(pos_pf,leg="pf")
+```
+"""
+function pgfplot_vector(vec;leg = "nolegend")
+    vec = reshape(vec,length(vec),)
+    return PGFPlots.Plots.Linear(collect(1:length(vec)),vec,legendentry=leg)
+end
+
+# function to truncate vectors to shortest length one
+"""
+function truncate_vecs(list_of_vectors)
+
+- Rmse vec lengths will not be same as simulation durations not the same
+- Select the shortest length rmse and truncate other scenarios to same length
+
+# Example
+```julia
+intset = collect(1:10) #integer set to draw random numbers from
+l = [rand(intset,4,1),rand(intset,5,1),rand(intset,6,1),rand(intset,10,1),rand(intset,3,1)]
+a = truncate_vecs(l)
+```
+"""
+function truncate_vecs(list_of_vectors)
+    shortest_length = 10000
+    numvec = length(list_of_vectors)
+    for i in 1:numvec
+        curr_len = length(list_of_vectors[i])
+        if curr_len < shortest_length
+            shortest_length = curr_len
+        end
+    end
+    #print("longest length = $(longest_length)\n")
+
+    new_list = []
+    
+    for j in 1:numvec
+        #print("j = $j\n")
+        # pad with zeros
+        curr_vec = list_of_vectors[j]
+        truncated_vec = curr_vec[1:shortest_length]
+        #print("padded_vec = $(padded_vec)\n")
+        push!(new_list,truncated_vec)
+    end
+
+    return hcat(new_list...)
+end
+
+# Elongate vectors to longest in the list by padding zeros
+"""
+function pad_zeros(list_of_vectors)
+- We need to append zeros to the shorter rmse vectors to make all lengths equal
+
+# Example
+```julia
+intset = collect(1:10) #integer set to draw random numbers from
+l = [rand(intset,4,1),rand(intset,5,1),rand(intset,6,1),rand(intset,10,1),rand(intset,3,1)]
+a = pad_zeros(l)
+```
+"""
+function pad_zeros(list_of_vectors)
+    longest_length = -1
+    numvec = length(list_of_vectors)
+    for i in 1:numvec
+        curr_len = length(list_of_vectors[i])
+        if curr_len > longest_length
+            longest_length = curr_len
+        end
+    end
+    #print("longest length = $(longest_length)\n")
+
+    new_list = []
+    
+    for j in 1:numvec
+        #print("j = $j\n")
+        # pad with zeros
+        curr_vec = list_of_vectors[j]
+        lengthdiff = longest_length-length(curr_vec)
+        padded_vec = vcat(curr_vec,fill(0.,lengthdiff,1))
+        #print("padded_vec = $(padded_vec)\n")
+        push!(new_list,padded_vec)
+    end
+
+    return hcat(new_list...)
+end
