@@ -2,6 +2,7 @@
 utils.jl
 
 Provides helper functions to `particle_filtering.jl` such as PGFPlots, rmse compute
+Also providese helpers used by `scripts/helpers.jl` such as `truncate_vecs`
 """
 
 # function: get frenet s
@@ -453,6 +454,19 @@ function test_collision(scenes_list,id_list)
         end
     end 
     return collisions_array
+end
+
+"""
+function frac_colliding_timesteps(coll_mat)
+- `coll_mat` has different scenarios in different columns
+- Each column has 1 in every timestep where there is at least one pair of cars colliding
+- We take all the timesteps i.e. N scenarios x H timesteps in each scenario
+- Find the fraction of timesteps that have a collision
+"""
+function frac_colliding_timesteps(coll_mat)
+        n = size(coll_mat,2) # num columns i.e. scenarios
+        h = size(coll_mat,1) # num timesteps per scenario
+        return sum(coll_mat)/(n*h)
 end
 
 """

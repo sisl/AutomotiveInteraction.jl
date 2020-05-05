@@ -282,7 +282,7 @@ function compare2truth(f::FilteringEnvironment;id_list=[],
 start_frame,duration=10,filename)
     scene_list_1 = run_vehicles(f,id_list=id_list,start_frame=start_frame,duration=duration)
     nticks = Int(ceil(duration/f.timestep))
-    scene_list_2 = traj[start_frame:start_frame+nticks]
+    scene_list_2 = f.traj[start_frame:start_frame+nticks]
     video_overlay_scenelists(scene_list_1,scene_list_2,id_list=id_list,
     roadway=f.roadway,filename=filename)
     return nothing

@@ -90,6 +90,8 @@ export
     imitation_with_replay,
     compute_rmse,
     rmse_dict2mean,
+    test_collision,
+    frac_colliding_timesteps,
     pgfplot_vector,
     truncate_vecs,
     pad_zeros
