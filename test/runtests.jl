@@ -33,4 +33,3 @@ rmse_pos_dict,rmse_vel_dict = compute_rmse(scene_list_1,scene_list_2,id_list=ego
     # Sample vehicles that drive together
 timestamped_trajscenes = extract_timespan(f.traj)
 sample_simultaneous_vehs(10,50,timestamped_trajscenes,egoid=6)
-end # testset Filtering
