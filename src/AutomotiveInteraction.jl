@@ -77,6 +77,7 @@ export
 include("Driving/overlays.jl")
 
 export
+    cidm_from_particle,
     hallucinate_a_step,
     weight_and_resample,
     multistep_update,

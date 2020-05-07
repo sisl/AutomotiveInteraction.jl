@@ -39,25 +39,27 @@ end
 
 # Examples
 ```julia
-# See run_vehicles function in driving_simulation.jl
+scenelist2video(f,scenelist,filename="media/test_scenelist2video.mp4")
 ```
 """
-function scenelist2video(scene_list;id_list=[],roadway,filename)
+function scenelist2video(f::FilteringEnvironment,scene_list;filename)
     frames = Frames(MIME("image/png"),fps = 10)
-    mr = MergingRoadway(roadway) # Wrapper for specialized render for merging lanes
+    mr = MergingRoadway(f.roadway) # Wrapper for specialized render for merging lanes
     mp = VecE2(1064.5227, 959.1559)
 
     # Loop over list of scenes and convert to video
     for i in 1:length(scene_list)
-        if !isempty(id_list) keep_vehicle_subset!(scene_list[i],id_list) end
-        scene_visual = render([mr,scene_list[i],
-                        IDOverlay(scene=scene_list[i]),
-                        TextOverlay(text=["frame=$(i)"],font_size=12)],
-                        camera=StaticCamera(position=mp,zoom=5.)
-        )
+        temp_scene = deepcopy(scene_list[i])
+        renderables = [
+            mr,
+            (FancyCar(car=temp_scene[j]) for j in 1:length(temp_scene))...,
+            IDOverlay(scene=temp_scene),
+            TextOverlay(text=["frame=$(i)"],font_size=12)
+        ]
+        scene_visual = render(renderables,camera=StaticCamera(position=mp,zoom=5.))
         push!(frames,scene_visual)
     end
-    print("Making video filename: $(filename)\n")
+    print("scenelist2video says: Making video filename: $(filename)\n")
     write(filename,frames)
     return nothing
 end

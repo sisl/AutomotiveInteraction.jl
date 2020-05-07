@@ -199,7 +199,7 @@ end
 """
     function make_roadway_ngsim()
 
-- Read in the ngsim 101 roadway from the provided roadway file `../dataset/ngsim_101.txt`
+- Read in the ngsim 101 roadway from the provided roadway file `/dataset/ngsim_101.txt`
 
 # Examples
 ```julia
@@ -207,7 +207,7 @@ roadway_ngsim = make_roadway_ngsim()
 ```
 """
 function make_roadway_ngsim()
-    roadway_ngsim = open(io->read(io, MIME"text/plain"(), Roadway),joinpath(@__DIR__,"dataset/ngsim_101.txt"), "r")
+    roadway_ngsim = open(io->read(io, Roadway),joinpath(@__DIR__,"dataset/ngsim_101.txt"), "r")
     return roadway_ngsim
 end
 

@@ -85,3 +85,9 @@ rmse_plots_modelscompare(rmse_pos_list,filename = "media/rmse_pos_upper.svg");
 
 coll_mat_list = [coll_mat_idm,coll_mat_cidm,coll_mat_lmidm,coll_mat_pf];
 coll_barchart(coll_mat_list,filename = "media/coll_barchart_upper.svg");
+
+#********************Train upper test lower******************
+# We need to show a variability in the generated scenarios
+# So we need to combine the particle sets of different vehicles together
+# And then for the same set of vehicles in the lower merge i.e. test domain
+# We show significantly different driving behavior by sampling from the particle set
