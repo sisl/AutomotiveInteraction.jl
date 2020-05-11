@@ -383,3 +383,95 @@ function train_one_test_another(;train_filename="media/lower_3.jld",
         scenelist2video(f,scene_list,filename=video_filename)
         return c_array
 end
+
+"""
+- Compare generated vs true scenario for how real the driving is
+- Make bar plot with stopped vehicle fraction and hard deceleration timefraction
+
+# Example
+```julia
+f = FilteringEnvironment()
+compare_realism(f,data_filename = "media/upper_4.jld",plot_filename="media/realism_4.svg")
+```
+"""
+function compare_realism(f::FilteringEnvironment;data_filename="media/upper_1.jld",
+    plot_filename="media/realism.svg")
+    models,id_list,ts,te = JLD.load(data_filename,"m","veh_id_list","ts","te")
+
+    scene_list_true = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+    stopfrac_true,brakefrac_true = reality_metrics(f,scene_list_true,id_list=id_list)
+
+    scene_real = deepcopy(f.traj[ts])
+    if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
+    nticks = te-ts+1
+    scene_list_generated = simulate(scene_real,f.roadway,models,nticks,f.timestep)
+    stopfrac_gen,brakefrac_gen = reality_metrics(f,scene_list_generated,id_list=id_list)
+
+    #TODO: Make bars stacked together
+    p = PGFPlots.Plots.BarChart(["stop true","stop gen","brake true","brake gen"],
+            [stopfrac_true,stopfrac_gen,brakefrac_true,brakefrac_gen])
+    a = PGFPlots.Axis(p,xlabel="Metric",ylabel="Reality value")
+    PGFPlots.save(plot_filename,a)
+    print("Made plot called $plot_filename\n")
+    return nothing
+end
+
+
+#****************Prepare data for idm lm fit*******************
+# Goal is to have the data in the form that we can directly use Jeremy's code
+"""
+# Example
+```julia
+f = FilteringEnvironment()
+scene = f.traj[2]
+egoid = 28
+extract_idm_features(f,scene,egoid)
+```
+"""
+function extract_idm_features(f::FilteringEnvironment,scene::Scene{Entity{S, D, I}},
+    egoid::I) where {S, D, I}
+    
+    ego = get_by_id(scene, egoid)
+
+    fore = find_neighbor(scene, f.roadway, ego, targetpoint_ego=VehicleTargetPointFront(), targetpoint_neighbor=VehicleTargetPointRear())
+
+    v_ego = vel(ego)
+    v_oth = NaN
+    headway = NaN
+
+    if fore.ind != nothing
+        v_oth = vel(scene[fore.ind].state)
+        headway = fore.Δs
+    end
+
+    return v_ego,v_oth-v_ego,headway
+end
+
+"""
+function scenelist2idmfeatures(f,scene_list;id_list=[])
+- Loop over a list of scenes and extract idm features
+- Returns dict with vehicle id as key and array of idm features as value
+- Array has each row a different timestep. Col 1 is v_ego, col2 is delta_v, 3 is headway
+
+# Example
+```julia
+f = FilteringEnvironment()
+filename = "media/upper_4.jld"
+models,id_list,ts,te = JLD.load(filename,"m","veh_id_list","ts","te")
+scene_list_true = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+feat_dict = scenelist2idmfeatures(f,scene_list_true,id_list=id_list)
+```
+"""
+function scenelist2idmfeatures(f,scene_list;id_list=[])
+    numscenes=length(scene_list)
+    idmfeat_dict = Dict()
+    for vehid in id_list
+        idmfeats = fill(0.,numscenes,3) # Because 3 idm features
+        for (i,scene) in enumerate(scene_list)
+            scene = scene_list[i]
+            idmfeats[i,1],idmfeats[i,2],idmfeats[i,3] = extract_idm_features(f,scene,vehid)
+        end
+        idmfeat_dict[vehid] = idmfeats
+    end
+    return idmfeat_dict
+end         

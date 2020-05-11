@@ -93,7 +93,9 @@ export
     frac_colliding_timesteps,
     pgfplot_vector,
     truncate_vecs,
-    pad_zeros
+    pad_zeros,
+    reality_metrics,
+    replay_scenelist
 include("Filtering/utils.jl")
 
 end # End module

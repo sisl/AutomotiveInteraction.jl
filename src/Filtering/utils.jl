@@ -560,3 +560,91 @@ function pad_zeros(list_of_vectors)
 
     return hcat(new_list...)
 end
+
+"""
+- Get a list of scenes from replay trajectory
+- This will be used to compute metrics of real driving behavior
+
+# Example
+```julia
+f = FilteringEnvironment()
+models,id_list,ts,te = JLD.load(filename,"m","veh_id_list","ts","te")
+scene_list = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+```
+"""
+function replay_scenelist(f::FilteringEnvironment;id_list=[],ts,te)
+    scene_list = deepcopy(f.traj[ts:te])
+    for scene in scene_list
+        if !isempty(id_list) keep_vehicle_subset!(scene,id_list) end
+    end
+    return scene_list
+end
+
+"""
+function reality_metrics(scene_list)
+- Compute things about the driving trajectory to assess how `real` the traffic is
+
+# Example
+```julia
+f = FilteringEnvironment()
+filename = "media/upper_4.jld"
+models,id_list,ts,te = JLD.load(filename,"m","veh_id_list","ts","te")
+
+scene_list_true = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+stopfrac_true,brakefrac_true = reality_metrics(f,scene_list_true,id_list=id_list)
+
+scene_real = deepcopy(f.traj[ts])
+if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
+nticks = te-ts+1
+scene_list_generated = simulate(start_scene,f.roadway,models,nticks,f.timestep)
+stopfrac_gen,brakefrac_gen = reality_metrics(f,scene_list_generated,id_list=id_list)
+```
+"""
+function reality_metrics(f::FilteringEnvironment,scene_list;id_list=[])
+    # Calculate number of timesteps where more than one car almost stopped
+    # This is based on visual in May 7 update slides turing test
+    
+    numscenes = length(scene_list)
+    stopped_scenes = fill(0.,numscenes,)
+    for (i,scene) in enumerate(scene_list)
+        laggards = 0
+        for veh in scene
+            if veh.state.v < 2
+                laggards += 1
+            end
+        end
+        if laggards>1
+            stopped_scenes[i] = 1
+        end
+    end
+    stopfrac = sum(stopped_scenes)/numscenes
+
+    # Calculate hard deceleration instances
+    numvehs = length(id_list)
+    acc_mat = fill(0.,numscenes-1,numvehs) #-1 because 1st elem of acc is `missing`
+    #print("size(acc_mat) = $(size(acc_mat))\n")
+    for (j,veh_id) in enumerate(id_list)
+        print("veh_id = $veh_id\n")
+        acc_trace = acc(f.roadway,scene_list,veh_id)
+        
+        trace = Float64.(acc_trace[2:end]) # Convert Union missing type to just Float
+        #popfirst!(trace) # Remove the first element i.e. missing
+
+        #print("size(trace) = $(size(trace))\n")
+        trace = reshape(trace,numscenes-1,)
+        #print("size(trace) = $(size(trace))\n")
+        
+        acc_mat[:,j] .= trace
+    end
+
+    num_harddecel = 0
+    for jj in 1:numscenes-1
+        if any(x->x<-2,acc_mat[jj,:]) # If any vehicle shows accel less than -2, its hard decel
+            num_harddecel += 1
+        end
+    end
+    #print("num_harddecel = $(num_harddecel)\n")
+    harddecelfrac = num_harddecel/(numscenes-1)
+
+    return stopfrac,harddecelfrac
+end

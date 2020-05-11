@@ -86,8 +86,31 @@ rmse_plots_modelscompare(rmse_pos_list,filename = "media/rmse_pos_upper.svg");
 coll_mat_list = [coll_mat_idm,coll_mat_cidm,coll_mat_lmidm,coll_mat_pf];
 coll_barchart(coll_mat_list,filename = "media/coll_barchart_upper.svg");
 
+
 #********************Train upper test lower******************
 # We need to show a variability in the generated scenarios
 # So we need to combine the particle sets of different vehicles together
 # And then for the same set of vehicles in the lower merge i.e. test domain
 # We show significantly different driving behavior by sampling from the particle set
+
+
+#************LsqFit failed experimentation***************
+# model(t, p) = p[1] * exp.(-p[2] * t)
+# tdata = range(0,stop=10,length=20)
+# ydata = model(tdata, [1.0 2.0]) + 0.01*randn(length(tdata))
+# p0 = [0.5,0.5]
+# fit = curve_fit(model, tdata, ydata, p0)
+
+# function test_lmfit(d,p)   
+#         print("test_lmfit called\n")
+#         print("says:d=$d\n") 
+#         t = d["t"]
+#         return p[1]*exp.(-p[2]*t)
+# end
+
+# test_tdata = []
+# for t in tdata
+#         push!(test_tdata,Dict("t"=>t))
+# end
+
+# curve_fit(test_lmfit,test_tdata,ydata,[0.5,0.5])
