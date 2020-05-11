@@ -452,6 +452,7 @@ function scenelist2idmfeatures(f,scene_list;id_list=[])
 - Loop over a list of scenes and extract idm features
 - Returns dict with vehicle id as key and array of idm features as value
 - Array has each row a different timestep. Col 1 is v_ego, col2 is delta_v, 3 is headway
+- Col4 is the true acceleration
 
 # Example
 ```julia
@@ -466,12 +467,15 @@ function scenelist2idmfeatures(f,scene_list;id_list=[])
     numscenes=length(scene_list)
     idmfeat_dict = Dict()
     for vehid in id_list
-        idmfeats = fill(0.,numscenes,3) # Because 3 idm features
+        idmfeats = fill(0.,numscenes,4) # Because 3 idm features and 1 true accl
+        acc_trace = acc(f.roadway,scene_list,vehid)
+        acc_trace[1] = -1. # Just to get rid of missing. This will be thrown away later
         for (i,scene) in enumerate(scene_list)
             scene = scene_list[i]
             idmfeats[i,1],idmfeats[i,2],idmfeats[i,3] = extract_idm_features(f,scene,vehid)
+            idmfeats[i,4] = acc_trace[i] # Caution: 1st elem will be missing
         end
         idmfeat_dict[vehid] = idmfeats
     end
     return idmfeat_dict
-end         
+end
