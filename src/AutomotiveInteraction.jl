@@ -12,12 +12,25 @@ using DelimitedFiles
 using Parameters
 using Random # For AbstractRNG in Base.rand for c-idm
 
+using Distributions # For pdf(Normal) in weight_and_resample
+using StatsBase # For weight_and_resample
+using LinearAlgebra # Form norm calculation for iterwise particle dist
+
+using Combinatorics # make param pairs for filtering progress pairwise plots
+using PGFPlots
+
+export
+    MergingEnvironment,
+    MergingEnvironmentLower,
+    FilteringEnvironment
+include("Driving/environment.jl")
+
 export 
     keep_vehicle_subset!,
     make_def_models,
     make_IDM_models,
     make_cidm_models,
-    make_iidm_models,
+    make_lmidm_models,
     make_TimLaneChanger_models,
     get_hallucination_scenes,
     run_vehicles,
@@ -25,50 +38,64 @@ export
     run_vehicles_curvept_overlay,
     test_barrier_vehicle,
     test_jumpy_vehicle
-include("driving_simulation.jl")
+include("Driving/driving_simulation.jl")
 
-export 
-    append_to_curve!,
-    get_new_angle,
-    bound_heading,
-    append_headings,
+export
     centerlines_txt2tracks,
     make_roadway_interaction,
     make_roadway_ngsim,
     make_roadway_interaction_with_extensions,
-    make_discont_roadway_straight,
-    make_discont_roadway_jagged,
     MergingRoadway,
     add_renderable!
-include("roadway_building.jl")
+include("Data_Processing/roadway_building.jl")
 
 export 
     INTERACTIONTrajdata,
     carsinframe,
     car_df_index,
-    read_veh_tracks
-include("veh_track_reading.jl")
+    read_veh_tracks,
+    extract_timespan,
+    sample_simultaneous_vehs
+include("Data_Processing/veh_track_reading.jl")
 
 export
     video_trajdata_replay,
     scenelist2video,
     video_overlay_scenelists,
     scenelist2video_curvepts
-include("visualization.jl")
-
-export
-    MergingEnvironment,
-    main_lane,
-    merge_lane
-include("environment.jl")
+include("Driving/visualization.jl")
 
 export
     CooperativeIDM,
     find_merge_vehicle
-include("cooperative_IDM.jl")
+include("Driving/cooperative_IDM.jl")
 
 export
     MergeOverlay
-include("overlays.jl")
+include("Driving/overlays.jl")
+
+export
+    cidm_from_particle,
+    hallucinate_a_step,
+    weight_and_resample,
+    multistep_update,
+    obtain_driver_models
+include("Filtering/particle_filtering.jl")
+
+export
+    initial_pmat,
+    plot_pairwise_particles,
+    gen_imitation_traj,
+    imitation_with_replay,
+    compute_rmse,
+    rmse_dict2mean,
+    test_collision,
+    frac_colliding_timesteps,
+    pgfplot_vector,
+    truncate_vecs,
+    pad_zeros,
+    reality_metrics,
+    replay_scenelist
+include("Filtering/utils.jl")
 
 end # End module

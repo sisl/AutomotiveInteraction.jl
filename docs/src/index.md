@@ -8,6 +8,7 @@ Pages = [
     "roadway_building.md",
     "driving_simulation.md",
     "visualization.md",
-    "veh_track_reading.md"
+    "veh_track_reading.md",
+    "filtering.md"
 ]
 ```

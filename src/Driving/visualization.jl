@@ -5,16 +5,16 @@ Makes a video of the trajdata taking frame range as input
 
 # Example
 ```julia
-video_trajdata_replay(range=1:100,roadway=roadway,trajdata=traj_interaction,
-    filename=joinpath(@__DIR__,"../julia_notebooks/media/replay_vid.mp4")
+f = FilteringEnvironment()
+video_trajdata_replay(f,id_list=[2,7,10,18,25],range=1:30,filename="media/lower_1.gif")
 ```
 """
-function video_trajdata_replay(id_list = [];range=nothing,trajdata,roadway,filename)
+function video_trajdata_replay(f::FilteringEnvironment;id_list = [],range=nothing,filename)
     frames = Frames(MIME("image/png"), fps=10)
-    mr = MergingRoadway(roadway) # Wrapper for specialized render for merging lanes
+    mr = MergingRoadway(f.roadway) # Wrapper for specialized render for merging lanes
     mp = VecE2(1064.5227, 959.1559)
     for i in range
-        temp_scene = trajdata[i]
+        temp_scene = deepcopy(f.traj[i])
         if !isempty(id_list) keep_vehicle_subset!(temp_scene,id_list) end
         renderables = [
             mr,
@@ -39,25 +39,27 @@ end
 
 # Examples
 ```julia
-# See run_vehicles function in driving_simulation.jl
+scenelist2video(f,scenelist,filename="media/test_scenelist2video.mp4")
 ```
 """
-function scenelist2video(scene_list;id_list=[],roadway,filename)
+function scenelist2video(f::FilteringEnvironment,scene_list;filename)
     frames = Frames(MIME("image/png"),fps = 10)
-    mr = MergingRoadway(roadway) # Wrapper for specialized render for merging lanes
+    mr = MergingRoadway(f.roadway) # Wrapper for specialized render for merging lanes
     mp = VecE2(1064.5227, 959.1559)
 
     # Loop over list of scenes and convert to video
     for i in 1:length(scene_list)
-        if !isempty(id_list) keep_vehicle_subset!(scene_list[i],id_list) end
-        scene_visual = render([mr,scene_list[i],
-                        IDOverlay(scene=scene_list[i]),
-                        TextOverlay(text=["frame=$(i)"],font_size=12)],
-                        camera=StaticCamera(position=mp,zoom=5.)
-        )
+        temp_scene = deepcopy(scene_list[i])
+        renderables = [
+            mr,
+            (FancyCar(car=temp_scene[j]) for j in 1:length(temp_scene))...,
+            IDOverlay(scene=temp_scene),
+            TextOverlay(text=["frame=$(i)"],font_size=12)
+        ]
+        scene_visual = render(renderables,camera=StaticCamera(position=mp,zoom=5.))
         push!(frames,scene_visual)
     end
-    print("Making video filename: $(filename)\n")
+    print("scenelist2video says: Making video filename: $(filename)\n")
     write(filename,frames)
     return nothing
 end
@@ -69,9 +71,9 @@ function video_overlay_scenelists(scene_list_1,scene_list_2,roadway,filename)
 ```julia
 scene_list_1 = run_vehicles(id_list=[6,8,19,28,29],roadway=road_ext,traj=traj_ext,
 filename="model_driven.mp4")
-scene_list_2 = traj_ext[1:length(scene_list_1)]
-video_overlay_scenes(scene_list_1,scene_list_2,id_list=[6,8,19,28,29],
-roadway=road_ext,filename="model_vs_truth.mp4")
+scene_list_2 = f.traj[1:length(scene_list_1)]
+video_overlay_scenes(scene_list_1,scene_list_2,id_list=[6,8,13,28,29],
+roadway=road_ext,filename="imit_real.mp4")
 ```
 """
 function video_overlay_scenelists(scene_list_1,scene_list_2;
@@ -101,7 +103,7 @@ function video_overlay_scenelists(scene_list_1,scene_list_2;
         scene_visual = render(renderables,camera=StaticCamera(position=mp,zoom=5.))
         push!(frames,scene_visual)
     end
-    print("Making video overlay scenelists. Filename: $(filename)\n")
+    print("video_overlay_scenelists: List 1 in blue, list 2 in red. Filename: $(filename)\n")
     write(filename,frames)
     return nothing
 end

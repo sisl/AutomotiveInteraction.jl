@@ -15,7 +15,7 @@ the car follows the IntelligentDriverModel.
     - `c::Float64 = 0.0` the cooperation level
 """
 @with_kw mutable struct CooperativeIDM <: DriverModel{LaneFollowingAccel}
-    env::MergingEnvironment = MergingEnvironment(merge_point = VecSE2(1064.5227,959.1559,-2.8938))
+    env = MergingEnvironment(merge_point = VecSE2(1064.5227,959.1559,-2.8938))
     idm::IntelligentDriverModel = IntelligentDriverModel(v_des = 15., d_cmf = 2.0, d_max=2.0,
                                                          T = 1.5,s_min = 2.0,a_max = 2.0)
     c::Float64 = 0.0 # cooperation level
@@ -111,17 +111,27 @@ end
 Base.rand(rng::AbstractRNG,model::CooperativeIDM) = LaneFollowingAccel(model.a)
 
 
-function find_merge_vehicle(env::MergingEnvironment, scene::Scene,ego_veh)
+function find_merge_vehicle(env,scene::Scene,ego_veh)
     ego_lane = get_lane(env.roadway,ego_veh)
     ego_lane_tag = ego_lane.tag # Let's use tag as I think it'll be faster to compare equality than entire lane
     ego_ttm = time_to_merge(env,ego_veh,0.)
+    
+    # Based on upper vs lower environment, decide the specific lanes to use
     merge_lane_tag = LaneTag(0,0)
-        # Depending on the ego vehicle lane, decide whether merge lane is a or b1
-    if ego_lane_tag == LaneTag(1,1) # Check if ego veh is on lane a
-        merge_lane_tag = LaneTag(1,2)
-    elseif ego_lane_tag == LaneTag(1,2)
-        merge_lane_tag = LaneTag(1,1)
+    if ego_lane_tag == main_lane_tag(env)
+        merge_lane_tag = merging_lane_tag(env)
+    elseif ego_lane_tag == merging_lane_tag(env)
+        merge_lane_tag = main_lane_tag(env)
     end
+
+
+    # merge_lane_tag = LaneTag(0,0)
+    #     # Depending on the ego vehicle lane, decide whether merge lane is a or b1
+    # if ego_lane_tag == LaneTag(1,1) # Check if ego veh is on lane a
+    #     merge_lane_tag = LaneTag(1,2)
+    # elseif ego_lane_tag == LaneTag(1,2)
+    #     merge_lane_tag = LaneTag(1,1)
+    # end
 
     diff_ttm = 10000
     merge_veh = nothing
@@ -130,7 +140,7 @@ function find_merge_vehicle(env::MergingEnvironment, scene::Scene,ego_veh)
         if lane.tag == merge_lane_tag
             veh_ttm = time_to_merge(env,veh,0.)
             diff_ttm_temp = abs(veh_ttm-ego_ttm)
-            print("merger vehicle id = $(veh.id)\n")
+            #print("merger vehicle id = $(veh.id)\n")
             if diff_ttm_temp < diff_ttm
                 diff_ttm = diff_ttm_temp
                 merge_veh = veh
@@ -167,13 +177,12 @@ function get_end(lane::Lane)
     return lane.curve[end].s
 end
 
-
 """
     time_to_merge(env::MergingEnvironment, veh::Vehicle, a::Float64 = 0.0)
 return the time to reach the merge point using constant acceleration prediction. 
 If the acceleration, `a` is not specified, it performs a constant velocity prediction.
 """
-function time_to_merge(env::MergingEnvironment, veh::Entity, a::Float64 = 0.0)
+function time_to_merge(env, veh::Entity, a::Float64 = 0.0)
     d = -dist_to_merge(env, veh)
     v = veh.state.v
     t = Inf
@@ -197,7 +206,7 @@ end
     dist_to_merge(env::MergingEnvironment, veh::Vehicle)
 returns the distance to the merge point.
 """
-function dist_to_merge(env::MergingEnvironment, veh::Entity)
+function dist_to_merge(env, veh::Entity)
     lane = get_lane(env.roadway, veh)
     dist = veh.state.posF.s - get_end(lane)
     return dist
@@ -208,7 +217,7 @@ end
 Performs a projection of `veh` onto the main lane. It returns the longitudinal position of the projection of `veh` on the main lane. 
 The projection is computing by conserving the distance to the merge point.
 """
-function distance_projection(env::MergingEnvironment, veh::Entity)
+function distance_projection(env, veh::Entity)
     if get_lane(env.roadway, veh) == main_lane(env)
         return veh.state.posF.s 
     else
