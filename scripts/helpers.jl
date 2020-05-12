@@ -7,6 +7,7 @@ Most functions have the script within the doc string as example
 using Distributions # provides `mean`: to compute mean of particle dist over cars
 using JLD # to save models
 using AutomotiveInteraction
+using DelimitedFiles # to write to txt file that will be read in by python
 
 # We need a function to read in the jld file and extract metrics based on it
 """
@@ -456,26 +457,64 @@ function scenelist2idmfeatures(f,scene_list;id_list=[])
 
 # Example
 ```julia
-f = FilteringEnvironment()
-filename = "media/upper_4.jld"
-models,id_list,ts,te = JLD.load(filename,"m","veh_id_list","ts","te")
-scene_list_true = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
-feat_dict = scenelist2idmfeatures(f,scene_list_true,id_list=id_list)
+using AutomotiveInteraction
+using AutomotiveSimulator
+using JLD
+cd("scripts")
+include("helpers.jl")
+f = FilteringEnvironment();
+filename = "media/upper_4.jld";
+models,id_list,ts,te = JLD.load(filename,"m","veh_id_list","ts","te");
+scene_list_true = replay_scenelist(f,id_list=id_list,ts=ts,te=te);
+feat_dict = scenelist2idmfeatures(f,scene_list_true,id_list=id_list);
 ```
 """
 function scenelist2idmfeatures(f,scene_list;id_list=[])
     numscenes=length(scene_list)
     idmfeat_dict = Dict()
     for vehid in id_list
-        idmfeats = fill(0.,numscenes,4) # Because 3 idm features and 1 true accl
+        data = fill(0.,numscenes,4) # Because 3 idm features and 1 true accl
         acc_trace = acc(f.roadway,scene_list,vehid)
         acc_trace[1] = -1. # Just to get rid of missing. This will be thrown away later
         for (i,scene) in enumerate(scene_list)
             scene = scene_list[i]
-            idmfeats[i,1],idmfeats[i,2],idmfeats[i,3] = extract_idm_features(f,scene,vehid)
-            idmfeats[i,4] = acc_trace[i] # Caution: 1st elem will be missing
+            data[i,1],data[i,2],data[i,3] = extract_idm_features(f,scene,vehid)
+            data[i,4] = acc_trace[i] # Caution: 1st elem will be missing
         end
-        idmfeat_dict[vehid] = idmfeats
+
+        temp = removeNaNrows(data)
+        idm_feats = temp[2:end,1:3]
+        acc_trace = temp[2:end,4]
+
+        writedlm("pythonscripts/$(vehid)_idmfeats.txt",idm_feats)
+        writedlm("pythonscripts/$(vehid)_trueacc.txt",acc_trace)
+
+        idmfeat_dict[vehid] = temp
     end
     return idmfeat_dict
+end
+
+"""
+function removeNaNrows(a)
+- Remove rows with any NaNs in them from the input matrix `a`
+
+# Example
+```julia
+a = rand(6,3)
+a[2,2] = NaN, a[5,3]=NaN
+b = removeNaNrows(a)
+```
+"""
+function removeNaNrows(a)
+    nan_row_idx = []
+    for i in 1:size(a,1)
+        curr_row = a[i,:]
+        
+        if sum(isnan.(curr_row))>0
+            push!(nan_row_idx,i)
+        end
+    end
+
+    b = a[setdiff(1:end,nan_row_idx),:]
+    return b
 end
