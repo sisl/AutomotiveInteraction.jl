@@ -94,6 +94,40 @@ modelmaker=make_cidm_models)
 end
 
 """
+function make_lmfit_idm_models(f::FilteringEnvironment,scene)
+
+- Read lmfit params stored in txt file and create associated driver model
+
+# Examples
+cd("scripts")
+include("helpers.jl")
+f = FilteringEnvironment()
+ts = 310 # Corresponds to scenario 4
+scene = deepcopy(f.traj[ts])
+models = make_lmfit_idm_models(f,scene,scenario_name="upper",scenario_number=4)
+"""
+function make_lmfit_idm_models(f::FilteringEnvironment,scene;scenario_name="upper",
+    scenario_number=1)
+    print("Models assigned based on lmfit parameters\n")
+    models = Dict{Int64,DriverModel}()
+    for veh in scene
+        veh_id = veh.id
+        if isfile("pythonscripts/$(scenario_name)_$(scenario_number)/$(veh_id)_lmfit_params.txt")
+            lmparams = readdlm("pythonscripts/upper_4/$(veh_id)_lmfit_params.txt")
+            v_des = lmparams[1]
+            T = lmparams[2]
+            dmin = lmparams[3]
+            models[veh.id] = IntelligentDriverModel(v_des=v_des,T=T,s_min=dmin)
+        else
+            # Default to Jeremy's parameters
+            models[veh.id] = IntelligentDriverModel(v_des=17.837,s_min=5.249,
+                                T=0.918,a_max=0.758,d_cmf=3.811)
+        end
+    end
+    return models
+end
+
+"""
 - Run multiple scenarios for the idm based models
 
 # Uses
@@ -454,6 +488,7 @@ function scenelist2idmfeatures(f,scene_list;id_list=[])
 - Returns dict with vehicle id as key and array of idm features as value
 - Array has each row a different timestep. Col 1 is v_ego, col2 is delta_v, 3 is headway
 - Col4 is the true acceleration
+- Writes the features and accleration trace to .txt files
 
 # Example
 ```julia
@@ -469,7 +504,8 @@ scene_list_true = replay_scenelist(f,id_list=id_list,ts=ts,te=te);
 feat_dict = scenelist2idmfeatures(f,scene_list_true,id_list=id_list);
 ```
 """
-function scenelist2idmfeatures(f,scene_list;id_list=[])
+function scenelist2idmfeatures(f,scene_list;id_list=[],
+    scenario_name="upper",scenario_number=4)
     numscenes=length(scene_list)
     idmfeat_dict = Dict()
     for vehid in id_list
@@ -486,8 +522,10 @@ function scenelist2idmfeatures(f,scene_list;id_list=[])
         idm_feats = temp[2:end,1:3]
         acc_trace = temp[2:end,4]
 
-        writedlm("pythonscripts/$(vehid)_idmfeats.txt",idm_feats)
-        writedlm("pythonscripts/$(vehid)_trueacc.txt",acc_trace)
+        dirname = "$(scenario_name)_$(scenario_number)"
+        
+        writedlm("lmfit/$(dirname)/$(vehid)_idmfeats.txt",idm_feats)
+        writedlm("lmfit/$(dirname)/$(vehid)_trueacc.txt",acc_trace)
 
         idmfeat_dict[vehid] = temp
     end
