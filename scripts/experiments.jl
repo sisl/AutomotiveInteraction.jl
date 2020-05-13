@@ -51,6 +51,25 @@ for i in 1:length(s)
         JLD.save("media/upper_$i.jld","m",m,"p",p,"md",md,"veh_id_list",veh_id_list,"ts",ts,"te",te)
 end
 
+#*****************Generate idm params for lmfit************
+s = scenarios_upper
+f = FilteringEnvironment()
+name = "upper"
+
+for i in 1:length(s)
+        veh_id_list = s[i][1]
+        ts = s[i][2][1]
+        te = s[i][2][2]
+        filename = "media/upper_$i.jld";
+        id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te");
+        scene_list_true = replay_scenelist(f,id_list=id_list,ts=ts,te=te);
+
+        dirname = "$(name)_$(i)"
+        mkdir("lmfit/$(dirname)")
+        feat_dict = scenelist2idmfeatures(f,scene_list_true,id_list=id_list,
+                        scenario_name=name,scenario_number=i);
+end
+
 
 #************Docstring example code from multiscenarios_pf in helpers.jl*****
 # USEFUL to keep around for making tikz plots later on by rerunning this script
@@ -86,24 +105,7 @@ rmse_plots_modelscompare(rmse_pos_list,filename = "media/rmse_pos_upper.svg");
 coll_mat_list = [coll_mat_idm,coll_mat_cidm,coll_mat_lmidm,coll_mat_pf];
 coll_barchart(coll_mat_list,filename = "media/coll_barchart_upper.svg");
 
-#*****************Generate idm params for lmfit************
-s = scenarios_upper
-f = FilteringEnvironment()
-name = "upper"
 
-for i in 1:length(s)
-        veh_id_list = s[i][1]
-        ts = s[i][2][1]
-        te = s[i][2][2]
-        filename = "media/upper_$i.jld";
-        id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te");
-        scene_list_true = replay_scenelist(f,id_list=id_list,ts=ts,te=te);
-
-        dirname = "$(name)_$(i)"
-        mkdir("lmfit/$(dirname)")
-        feat_dict = scenelist2idmfeatures(f,scene_list_true,id_list=id_list,
-                        scenario_name=name,scenario_number=i);
-end
 
 #********************Train upper test lower******************
 # We need to show a variability in the generated scenarios
