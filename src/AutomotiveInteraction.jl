@@ -18,6 +18,7 @@ using LinearAlgebra # Form norm calculation for iterwise particle dist
 
 using Combinatorics # make param pairs for filtering progress pairwise plots
 using PGFPlots
+using JLD # For multiscenarios_lmidm
 
 export
     MergingEnvironment,
@@ -97,5 +98,17 @@ export
     reality_metrics,
     replay_scenelist
 include("Filtering/utils.jl")
+
+export
+    scenelist2idmfeatures,
+    multiscenarios_lmidm
+include("Filtering/lmidm.jl")
+
+export
+    multiscenarios_idm,
+    multiscenarios_pf,
+    coll_barchart,
+    rmse_plots_modelscompare
+include("Filtering/metrics.jl")
 
 end # End module
