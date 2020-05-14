@@ -209,16 +209,14 @@ end
 
 # Example
 ```julia
-rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm = 
-        multiscenarios_idm(mergetype="upper",modelmaker=make_IDM_models)
-rmse_pos_mat_cidm, rmse_vel_mat_cidm, coll_mat_cidm = 
-        multiscenarios_idm(mergetype="upper",modelmaker=make_cidm_models)
-rmse_pos_mat_lmidm, rmse_vel_mat_lmidm, coll_mat_lmidm = multiscenarios_lmidm(
-    mergetype="upper")
-rmse_pos_mat_pf, rmse_vel_mat_pf, coll_mat_pf = multiscenarios_pf(mergetype="upper")
+cd("scripts")
+rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm = multiscenarios_idm(mergetype="upper",modelmaker=make_IDM_models);
+rmse_pos_mat_cidm, rmse_vel_mat_cidm, coll_mat_cidm = multiscenarios_idm(mergetype="upper",modelmaker=make_cidm_models);
+rmse_pos_mat_lmidm, rmse_vel_mat_lmidm, coll_mat_lmidm = multiscenarios_lmidm(mergetype="upper");
+rmse_pos_mat_pf, rmse_vel_mat_pf, coll_mat_pf = multiscenarios_pf(mergetype="upper");
 
-coll_mat_list = [coll_mat_idm,coll_mat_cidm,coll_mat_lmidm,coll_mat_pf]
-coll_barchart(coll_mat_list,filename = "media/coll_barchart_new.svg")
+coll_mat_list = [coll_mat_idm,coll_mat_cidm,coll_mat_lmidm,coll_mat_pf];
+coll_barchart(coll_mat_list,filename = "media/coll_barchart_new_cidm.svg");
 ```
 """
 function coll_barchart(coll_mat_list;filename="media/test_bar.pdf")
@@ -246,13 +244,14 @@ function rmse_plots_modelscompare(rmse_list;filename="media/test_rmse.pdf")
 
 # Example
 ```julia
-rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm = multiscenarios_idm(mergetype="upper",modelmaker=make_IDM_models)
-rmse_pos_mat_cidm, rmse_vel_mat_cidm, coll_mat_cidm = multiscenarios_idm(mergetype="upper",modelmaker=make_cidm_models)
-rmse_pos_mat_lmidm, rmse_vel_mat_lmidm, coll_mat_lmidm = multiscenarios_lmidm(mergetype="upper")
-rmse_pos_mat_pf, rmse_vel_mat_pf, coll_mat_pf = multiscenarios_pf(mergetype="upper")
+cd("scripts")
+rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm = multiscenarios_idm(mergetype="upper",modelmaker=make_IDM_models);
+rmse_pos_mat_cidm, rmse_vel_mat_cidm, coll_mat_cidm = multiscenarios_idm(mergetype="upper",modelmaker=make_cidm_models);
+rmse_pos_mat_lmidm, rmse_vel_mat_lmidm, coll_mat_lmidm = multiscenarios_lmidm(mergetype="upper");
+rmse_pos_mat_pf, rmse_vel_mat_pf, coll_mat_pf = multiscenarios_pf(mergetype="upper");
 
-rmse_list = [rmse_pos_mat_idm,rmse_pos_mat_cidm,rmse_pos_mat_lmidm,rmse_pos_mat_pf]
-rmse_plots_modelscompare(rmse_list,filename = "media/rmse_pos_new.svg")
+rmse_list = [rmse_pos_mat_idm,rmse_pos_mat_cidm,rmse_pos_mat_lmidm,rmse_pos_mat_pf];
+rmse_plots_modelscompare(rmse_list,filename = "media/rmse_pos_new.svg");
 ```
 """
 function rmse_plots_modelscompare(rmse_mat_list;filename="media/test_rmse.pdf")

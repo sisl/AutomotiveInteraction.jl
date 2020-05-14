@@ -2,20 +2,71 @@
 helpers.jl
 This file provides helper functions to experiments.jl, the experiment script
 Most functions have the script within the doc string as example
-
-# List of functions
-- metrics_from_jld
-- metrics_from_jld_idmbased
-- multiscenarios_idm
-- multiscenarios_pf
-- collision rmse functions
-- scenario generation
 """
 
 using Distributions # provides `mean`: to compute mean of particle dist over cars
 using JLD # to save models
 using AutomotiveInteraction
 using DelimitedFiles # to write to txt file that will be read in by python
+
+"""
+- Make scatter plot of the lmidm parameters and final particle for a scenario
+with each scatter point corresponding to a different car
+
+# Examples
+```julia
+cd("scripts")
+f= FilteringEnvironment()
+scatterplot_lmfit_pf(f,scene_real,scenario_name="upper_1")
+```
+"""
+function scatterplot_lmfit_pf(f::FilteringEnvironment;scenario_name="upper_1")
+    filename="media/$(scenario_name).jld"
+    particle,id_list,ts,te = JLD.load(filename,"p","veh_id_list","ts","te")
+    scene = deepcopy(f.traj[ts])
+    if !isempty(id_list) keep_vehicle_subset!(scene,id_list) end
+
+    v_des_vec = []
+    T_vec = []
+    v_des_vec_pf = []
+    T_vec_pf=[]
+    # Loop over list of vehicles and assign model params based on lmfit values
+    for veh in scene
+        veh_id = veh.id
+        
+        # Read the lmfit parameters
+        lmfit_param_filename = "lmfit/$(scenario_name)/$(veh_id)_lmfit_params.txt"
+        if isfile(lmfit_param_filename)
+            lmparams = readdlm(lmfit_param_filename)
+            v_des = lmparams[1]
+            T = lmparams[2]
+            s_min = lmparams[3]
+            push!(v_des_vec,v_des)
+            push!(T_vec,T)
+        else
+            # Default to Jeremy's parameters
+            print("Could not find lmfit param file for $(veh_id). Use Jeremy params\n")
+            v_des=17.837
+            T=0.918
+            s_min=5.249
+            push!(v_des_vec,v_des)
+            push!(T_vec,T)
+        end
+
+        # Insert the pf parameters
+        push!(v_des_vec_pf,particle[veh_id][1])
+        push!(T_vec_pf,particle[veh_id][3])
+    end
+
+    scatter_lmidm = PGFPlots.Plots.Scatter(Float64.(v_des_vec),Float64.(T_vec),
+    legendentry="lmidm")
+    scatter_pf = PGFPlots.Plots.Scatter(Float64.(v_des_vec_pf),Float64.(T_vec_pf),
+    legendentry="pf")
+    a = PGFPlots.Axis([scatter_lmidm,scatter_pf],xlabel="v",ylabel="T",
+    title="lmidm vs pf parameters")
+    PGFPlots.save("media/lmfit_pf_scatter_$(scenario_name).svg",a)
+    return nothing
+end
 
 #****************scenario_generation************************
 """
