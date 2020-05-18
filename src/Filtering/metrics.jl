@@ -5,7 +5,49 @@ Run by navigating REPL to scripts folder
 
 - Functions to scale up metrics extraction across scenarios and models
 - utils.jl provides basic computation such as compute_rmse but this guy scales that up
+
+# List of Functions
+- `vel_distribution`
+- `metrics_from_jld_idmbased`
+- `multiscenarios_idm`
+- `metrics_from_jld`
+- `multiscenarios_pf`
+- `coll_barchart`
+- `rmse_plots_modelscompare`
 """
+
+"""
+- Make a histogram over the velocities
+
+# Example
+```julia
+# Extract ground truth velocity distribution for scenario 1 upper
+f = FilteringEnvironment()
+id_list,ts,te=JLD.load("media/upper_1.jld","veh_id_list","ts","te")
+scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+veh_hist_true = vel_distribution(scenelist);
+
+rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm,vhist_scenariowise_idm = multiscenarios_idm(mergetype="lower",modelmaker=make_IDM_models)
+rmse_pos_mat_pf,rmse_vel_mat_pf,coll_mat_pf,vhist_scenariowise_pf = multiscenarios_pf(mergetype="upper");
+rmse_pos_mat_lmidm, rmse_vel_mat_lmidm, coll_mat_lmidm,vhist_scenariowise_lmidm = multiscenarios_lmidm(mergetype="upper")
+
+v_hist_idm = vhist_scenariowise_idm[1]
+v_hist_pf = vhist_scenariowise_pf[1]
+v_hist_lmidm = vhist_scenariowise_lmidm[1]
+a = PGFPlots.Axis([veh_hist_true,v_hist_idm,v_hist_lmidm,v_hist_pf])
+```
+"""
+function vel_distribution(list_of_scenes;id_list=[])
+    vel_array = []
+    for scene in list_of_scenes
+        if !isempty(id_list) keep_vehicle_subset!(scene,id_list) end
+        for veh in scene
+            vel = veh.state.v
+            push!(vel_array,vel)
+        end
+    end
+    h = PGFPlots.Plots.Histogram(Float64.(vel_array),bins=10)
+end
 
 """
 - Similar function to `metrics_from_jld` but for idm based models
@@ -16,6 +58,12 @@ Run by navigating REPL to scripts folder
 - f::FilteringEnvironment
 - filename: jld file
 - modelmaker: function that assigns idm based models to vehicles in the scene
+
+# Returns
+- `rmse_pos`: array with average over cars rmse_pos at each timestep
+- `rmse_vel`:
+- `coll_array`: binary array of length number of timesteps. 1 if any collision at that timestep
+- `vel_hist`: PGFPlots.Plots.Histogram with velocity distribution over all vehicles over all timesteps
 
 # Used by
 - multiscenarios_idm
@@ -50,33 +98,23 @@ modelmaker=make_cidm_models)
     rmse_pos = rmse_dict2mean(rmse_pos_dict)
     rmse_vel = rmse_dict2mean(rmse_vel_dict)
 
-    return rmse_pos,rmse_vel,c_array
+    vel_hist = vel_distribution(scene_list)
+
+    return rmse_pos,rmse_vel,c_array,vel_hist
 end
 
 """
 - Run multiple scenarios for the idm based models
+- Scenario number and jld file path are hard coded
 
 # Uses
-- metrics_from_jld_idmbased
+- `metrics_from_jld_idmbased`
 
 # Example
 ```julia
-rmse_pos_mat_idm, = multiscenarios_idm(mergetype="lower",modelmaker=make_IDM_models)
-rmse_pos_mat_cidm, = multiscenarios_idm(mergetype="lower",modelmaker=make_cidm_models)
-rmse_pos_mat_lmidm, = multiscenarios_idm(mergetype="lower",modelmaker=make_lmidm_models)
-rmse_pos_mat_pf, = multiscenarios_pf(mergetype="lower")
+rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm,vhist_scenariowise_idm = multiscenarios_idm(mergetype="lower",modelmaker=make_IDM_models)
 
-rmse_idm = mean(rmse_pos_mat_idm,dims=2)
-rmse_cidm = mean(rmse_pos_mat_cidm,dims=2)
-rmse_lmidm = mean(rmse_pos_mat_lmidm,dims=2)
-rmse_pf = mean(rmse_pos_mat_pf,dims=2)
-
-pi = pgfplot_vector(rmse_idm,leg="idm");
-pc = pgfplot_vector(rmse_cidm,leg="cidm");
-pl = pgfplot_vector(rmse_lmidm,leg="lmidm");
-ppf = pgfplot_vector(rmse_pf,leg="pf");
-ax = PGFPlots.Axis([pi,pc,pl,ppf],xlabel="timestep",ylabel="rmse pos",title="multiscenario");
-PGFPlots.save("media/rmse_multi4.svg",ax)
+PGFPlots.Axis(vhist_scenariowise[1],xlabel="",ylabel="",title="")
 ```
 """
 function multiscenarios_idm(;mergetype="upper",modelmaker=make_cidm_models)
@@ -96,20 +134,22 @@ function multiscenarios_idm(;mergetype="upper",modelmaker=make_cidm_models)
     rmse_pos_scenariowise = []
     rmse_vel_scenariowise = []
     coll_scenariowise = []
+    vhist_scenariowise = []
 
     for i in 1:num_scenarios
         print("scenario number = $i\n")
-        rmse_pos,rmse_vel,coll_array = metrics_from_jld_idmbased(f,
+        rmse_pos,rmse_vel,coll_array,vhist = metrics_from_jld_idmbased(f,
             filename="media/$(prefix)_$i.jld",modelmaker=modelmaker)
         push!(rmse_pos_scenariowise,rmse_pos)
         push!(rmse_vel_scenariowise,rmse_vel)
         push!(coll_scenariowise,coll_array)
+        push!(vhist_scenariowise,vhist)
     end
 
     rmse_pos_matrix = truncate_vecs(rmse_pos_scenariowise)
     rmse_vel_matrix = truncate_vecs(rmse_vel_scenariowise)
     coll_matrix = truncate_vecs(coll_scenariowise)
-    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix
+    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,vhist_scenariowise
 end
 
 """
@@ -146,7 +186,9 @@ function metrics_from_jld(f::FilteringEnvironment;filename="1.jld")
     rmse_pos = rmse_dict2mean(rmse_pos_dict)
     rmse_vel = rmse_dict2mean(rmse_vel_dict)
 
-    return rmse_pos,rmse_vel,c_array
+    vel_hist = vel_distribution(scene_list)
+
+    return rmse_pos,rmse_vel,c_array,vel_hist
 end
 
 """
@@ -155,12 +197,11 @@ end
 - Uses `truncate_vecs` to make sure that rmse lengths match since scenario lengths not same
 
 # Uses
-- metrics_from_jld to extract rmse and collision by running simulations
+- `metrics_from_jld` to extract rmse, collision, and vel histogram by running simulations
 
 # Example
 ```julia
-a1,a2,a3 = multiscenarios_pf(mergetype="lower")
-rmse_pos = mean(a1,dims=2)
+rmse_pos_mat_pf,rmse_vel_mat_pf,coll_mat_pf,vhist_scenariowise_pf = multiscenarios_pf(mergetype="upper");
 ```
 """
 function multiscenarios_pf(;mergetype = "upper")
@@ -178,21 +219,23 @@ function multiscenarios_pf(;mergetype = "upper")
     rmse_pos_scenariowise = []
     rmse_vel_scenariowise = []
     coll_scenariowise = []
+    vhist_scenariowise = []
 
     for i in 1:num_scenarios
         print("i=$i\n")
         print("filename = media/$(prefix)_$i.jld\n")
-        rmse_pos,rmse_vel,coll_array = metrics_from_jld(f,
+        rmse_pos,rmse_vel,coll_array,vhist = metrics_from_jld(f,
         filename="media/$(prefix)_$i.jld")
         push!(rmse_pos_scenariowise,rmse_pos)
         push!(rmse_vel_scenariowise,rmse_vel)
         push!(coll_scenariowise,coll_array)
+        push!(vhist_scenariowise,vhist)
     end
 
     rmse_pos_matrix = truncate_vecs(rmse_pos_scenariowise)
     rmse_vel_matrix = truncate_vecs(rmse_vel_scenariowise)
     coll_matrix = truncate_vecs(coll_scenariowise)
-    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix
+    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,vhist_scenariowise
 end
 
 #***************collision and rmse compare***********************
@@ -219,7 +262,7 @@ coll_mat_list = [coll_mat_idm,coll_mat_cidm,coll_mat_lmidm,coll_mat_pf];
 coll_barchart(coll_mat_list,filename = "media/coll_barchart_new_cidm.svg");
 ```
 """
-function coll_barchart(coll_mat_list;filename="media/test_bar.pdf")
+function coll_barchart(coll_mat_list;filename="media/test_bar.svg")
         collfrac_idm = frac_colliding_timesteps(coll_mat_list[1])
         collfrac_cidm = frac_colliding_timesteps(coll_mat_list[2])
         collfrac_lmidm = frac_colliding_timesteps(coll_mat_list[3])

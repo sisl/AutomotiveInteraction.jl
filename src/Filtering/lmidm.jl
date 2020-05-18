@@ -197,7 +197,9 @@ function metrics_from_jld_lmidm(f::FilteringEnvironment;scenario_name="upper",sc
     rmse_pos = rmse_dict2mean(rmse_pos_dict)
     rmse_vel = rmse_dict2mean(rmse_vel_dict)
 
-    return rmse_pos,rmse_vel,c_array
+    vel_hist = vel_distribution(scene_list)
+
+    return rmse_pos,rmse_vel,c_array,vel_hist
 end
 
 """
@@ -229,18 +231,20 @@ function multiscenarios_lmidm(;mergetype="upper")
     rmse_pos_scenariowise = []
     rmse_vel_scenariowise = []
     coll_scenariowise = []
+    vhist_scenariowise = []
 
     for i in 1:num_scenarios
         print("scenario number = $i\n")
-        rmse_pos,rmse_vel,coll_array = metrics_from_jld_lmidm(f,
+        rmse_pos,rmse_vel,coll_array,vhist = metrics_from_jld_lmidm(f,
             scenario_name=name,scenario_number=i)
         push!(rmse_pos_scenariowise,rmse_pos)
         push!(rmse_vel_scenariowise,rmse_vel)
         push!(coll_scenariowise,coll_array)
+        push!(vhist_scenariowise,vhist)
     end
 
     rmse_pos_matrix = truncate_vecs(rmse_pos_scenariowise)
     rmse_vel_matrix = truncate_vecs(rmse_vel_scenariowise)
     coll_matrix = truncate_vecs(coll_scenariowise)
-    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix
+    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,vhist_scenariowise
 end

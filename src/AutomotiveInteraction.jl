@@ -105,6 +105,7 @@ export
 include("Filtering/lmidm.jl")
 
 export
+    vel_distribution,
     multiscenarios_idm,
     multiscenarios_pf,
     coll_barchart,
