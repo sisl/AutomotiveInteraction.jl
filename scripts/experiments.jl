@@ -106,6 +106,11 @@ coll_mat_list = [coll_mat_idm,coll_mat_cidm,coll_mat_lmidm,coll_mat_pf];
 coll_barchart(coll_mat_list,filename = "media/coll_barchart_upper.svg");
 
 
+#***********Histogram plot****************
+# Full example in docstring of Filtering/metrics.jl vel_distribution
+a = PGFPlots.Axis([veh_hist_true,v_hist_idm,v_hist_cidm,v_hist_lmidm,v_hist_pf,
+Plots.Command(raw"\legend{true,idm,cidm,lmidm,pf}")
+]);
 
 #********************Train upper test lower******************
 # We need to show a variability in the generated scenarios

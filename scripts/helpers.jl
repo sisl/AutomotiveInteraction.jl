@@ -135,3 +135,47 @@ function compare_realism(f::FilteringEnvironment;data_filename="media/upper_1.jl
     print("Made plot called $plot_filename\n")
     return nothing
 end
+
+
+# ***************Vehicle track plot****************
+struct MyRenderableCircle
+    pos::VecE2
+    radius::Float64
+    color::Colorant
+end
+
+function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel, circle::MyRenderableCircle)
+    # add the desired render instructions to the rendermodel
+    add_instruction!(
+        rendermodel, AutomotiveVisualization.render_circle,
+        (circle.pos.x, circle.pos.y, circle.radius, circle.color),
+        coordinate_system=:scene
+    )
+    return rendermodel
+end
+
+"""
+- Make a track of the vehicle positions over time
+
+# Example
+```julia
+f = FilteringEnvironment()
+id_list,ts,te=JLD.load("media/upper_1.jld","veh_id_list","ts","te")
+scene_list = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+p6 = veh_track(6,scene_list);
+p8 = veh_track(8,scene_list,color=RGB{Float64}(0.20,0.72,0.33));
+p13 = veh_track(13,scene_list,color=rand(RGB));
+render([f.roadway,p6...,p8...,p13...])
+```
+"""
+function veh_track(vehid::Int64,scene_list;
+    color=RGB{Float64}(0.86,0.23,0.49))
+    circles = []
+    for scene in scene_list
+        veh = get_by_id(scene,vehid)
+        x = veh.state.posG.x
+        y = veh.state.posG.y
+        push!(circles,MyRenderableCircle(VecE2(x,y),0.5,color))
+    end
+    return circles
+end

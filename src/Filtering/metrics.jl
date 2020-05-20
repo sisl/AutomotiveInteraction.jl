@@ -22,19 +22,25 @@ Run by navigating REPL to scripts folder
 # Example
 ```julia
 # Extract ground truth velocity distribution for scenario 1 upper
+cd("scripts")
 f = FilteringEnvironment()
 id_list,ts,te=JLD.load("media/upper_1.jld","veh_id_list","ts","te")
 scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
 veh_hist_true = vel_distribution(scenelist);
 
 rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm,vhist_scenariowise_idm = multiscenarios_idm(mergetype="lower",modelmaker=make_IDM_models)
+rmse_pos_mat_cidm,rmse_vel_mat_cidm,coll_mat_cidm,vhist_scenariowise_cidm = multiscenarios_idm(mergetype="lower",modelmaker=make_cidm_models)
 rmse_pos_mat_pf,rmse_vel_mat_pf,coll_mat_pf,vhist_scenariowise_pf = multiscenarios_pf(mergetype="upper");
 rmse_pos_mat_lmidm, rmse_vel_mat_lmidm, coll_mat_lmidm,vhist_scenariowise_lmidm = multiscenarios_lmidm(mergetype="upper")
 
-v_hist_idm = vhist_scenariowise_idm[1]
-v_hist_pf = vhist_scenariowise_pf[1]
-v_hist_lmidm = vhist_scenariowise_lmidm[1]
-a = PGFPlots.Axis([veh_hist_true,v_hist_idm,v_hist_lmidm,v_hist_pf])
+v_hist_idm = vhist_scenariowise_idm[1];
+v_hist_cidm = vhist_scenariowise_cidm[1];
+v_hist_pf = vhist_scenariowise_pf[1];
+v_hist_lmidm = vhist_scenariowise_lmidm[1];
+
+a = PGFPlots.Axis([veh_hist_true,v_hist_idm,v_hist_cidm,v_hist_lmidm,v_hist_pf,
+Plots.Command(raw"legend{true,idm,cidm,lmidm,pf}") # Need backslash before legend
+])
 ```
 """
 function vel_distribution(list_of_scenes;id_list=[])
