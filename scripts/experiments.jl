@@ -112,30 +112,25 @@ a = PGFPlots.Axis([veh_hist_true,v_hist_idm,v_hist_cidm,v_hist_lmidm,v_hist_pf,
 Plots.Command(raw"\legend{true,idm,cidm,lmidm,pf}")
 ]);
 
+aidm = PGFPlots.Axis([veh_hist_true,v_hist_idm,Plots.Command(raw"\legend{true,idm}")],
+xlabel="velocity",ylabel="density",title="True vs IDM");
+
+acidm = PGFPlots.Axis([veh_hist_true,v_hist_cidm,Plots.Command(raw"\legend{true,c-idm}")],
+xlabel="velocity",ylabel="density",title="True vs C-IDM");
+
+almidm = PGFPlots.Axis([veh_hist_true,v_hist_lmidm,Plots.Command(raw"\legend{true,lm-idm}")],
+xlabel="velocity",ylabel="density",title="True vs LM-IDM");
+
+apf = PGFPlots.Axis([veh_hist_true,v_hist_pf,Plots.Command(raw"\legend{true,pf}")],
+xlabel="velocity",ylabel="density",title="True vs pf");
+
+PGFPlots.save("media/vhist_idm.svg",aidm)
+PGFPlots.save("media/vhist_cidm.svg",acidm)
+PGFPlots.save("media/vhist_lmidm.svg",almidm)
+PGFPlots.save("media/vhist_pf.svg",apf)
+
 #********************Train upper test lower******************
 # We need to show a variability in the generated scenarios
 # So we need to combine the particle sets of different vehicles together
 # And then for the same set of vehicles in the lower merge i.e. test domain
 # We show significantly different driving behavior by sampling from the particle set
-
-
-#************LsqFit failed experimentation***************
-# model(t, p) = p[1] * exp.(-p[2] * t)
-# tdata = range(0,stop=10,length=20)
-# ydata = model(tdata, [1.0 2.0]) + 0.01*randn(length(tdata))
-# p0 = [0.5,0.5]
-# fit = curve_fit(model, tdata, ydata, p0)
-
-# function test_lmfit(d,p)   
-#         print("test_lmfit called\n")
-#         print("says:d=$d\n") 
-#         t = d["t"]
-#         return p[1]*exp.(-p[2]*t)
-# end
-
-# test_tdata = []
-# for t in tdata
-#         push!(test_tdata,Dict("t"=>t))
-# end
-
-# curve_fit(test_lmfit,test_tdata,ydata,[0.5,0.5])

@@ -2,6 +2,12 @@
 helpers.jl
 This file provides helper functions to experiments.jl, the experiment script
 Most functions have the script within the doc string as example
+
+# List of functions
+- `scatterplot_lmfit_pf`
+- `train_one_test_another`
+- `compare_realism`
+- `veh_track`
 """
 
 using Distributions # provides `mean`: to compute mean of particle dist over cars
@@ -144,7 +150,8 @@ struct MyRenderableCircle
     color::Colorant
 end
 
-function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel, circle::MyRenderableCircle)
+function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel, 
+    circle::MyRenderableCircle)
     # add the desired render instructions to the rendermodel
     add_instruction!(
         rendermodel, AutomotiveVisualization.render_circle,
@@ -155,21 +162,15 @@ function AutomotiveVisualization.add_renderable!(rendermodel::RenderModel, circl
 end
 
 """
-- Make a track of the vehicle positions over time
+function plottrack_singleveh
+- Make a track of the positions over time for a single vehicle with id `vehid`
 
 # Example
 ```julia
-f = FilteringEnvironment()
-id_list,ts,te=JLD.load("media/upper_1.jld","veh_id_list","ts","te")
-scene_list = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
-p6 = veh_track(6,scene_list);
-p8 = veh_track(8,scene_list,color=RGB{Float64}(0.20,0.72,0.33));
-p13 = veh_track(13,scene_list,color=rand(RGB));
-render([f.roadway,p6...,p8...,p13...])
+# See plottrack_scenario
 ```
 """
-function veh_track(vehid::Int64,scene_list;
-    color=RGB{Float64}(0.86,0.23,0.49))
+function plottrack_singleveh(vehid::Int64,scene_list;color=RGB{Float64}(0.86,0.23,0.49))
     circles = []
     for scene in scene_list
         veh = get_by_id(scene,vehid)
@@ -178,4 +179,31 @@ function veh_track(vehid::Int64,scene_list;
         push!(circles,MyRenderableCircle(VecE2(x,y),0.5,color))
     end
     return circles
+end
+
+"""
+function plottrack_scenario
+- Make track of all vehicles in the scenario
+
+# Uses
+- `plottrack_singleveh`
+
+# Example
+```julia
+f = FilteringEnvironment()
+cd("scripts")
+plottrack_scenario(f,"media/lower_2.jld","media/tracks_lower2.svg")
+```
+"""
+function plottrack_scenario(f::FilteringEnvironment,jld_filename,track_filename)
+    id_list,ts,te = JLD.load(jld_filename,"veh_id_list","ts","te")
+    scene_list = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+    tracks = MyRenderableCircle[]
+    for id in id_list
+        push!(tracks,plottrack_singleveh(id,scene_list,color=rand(RGB))...)
+    end
+    snapshot = render([f.roadway,tracks...])
+    write(track_filename,snapshot)
+    print("Writing track file to $(track_filename)\n")
+    return nothing
 end
