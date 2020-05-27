@@ -106,6 +106,7 @@ include("Filtering/lmidm.jl")
 
 export
     vel_distribution,
+    speed_histogram,
     multiscenarios_idm,
     multiscenarios_pf,
     coll_barchart,

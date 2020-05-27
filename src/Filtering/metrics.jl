@@ -22,23 +22,39 @@ Run by navigating REPL to scripts folder
 # Example
 ```julia
 # Extract ground truth velocity distribution for scenario 1 upper
-cd("scripts")
-f = FilteringEnvironment()
-id_list,ts,te=JLD.load("media/upper_1.jld","veh_id_list","ts","te")
-scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
-veh_hist_true = vel_distribution(scenelist);
+using AutomotiveInteraction
+using JLD
+using AutomtiveSimulator
+using StatsPlots
+pgfplots()
+cd("scripts");
+f = FilteringEnvironment();
+id_list,ts,te=JLD.load("media/upper_1.jld","veh_id_list","ts","te");
+scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te);
+vel_array_true = vel_distribution(scenelist);
 
-rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm,vhist_scenariowise_idm = multiscenarios_idm(mergetype="lower",modelmaker=make_IDM_models)
-rmse_pos_mat_cidm,rmse_vel_mat_cidm,coll_mat_cidm,vhist_scenariowise_cidm = multiscenarios_idm(mergetype="lower",modelmaker=make_cidm_models)
-rmse_pos_mat_pf,rmse_vel_mat_pf,coll_mat_pf,vhist_scenariowise_pf = multiscenarios_pf(mergetype="upper");
-rmse_pos_mat_lmidm, rmse_vel_mat_lmidm, coll_mat_lmidm,vhist_scenariowise_lmidm = multiscenarios_lmidm(mergetype="upper")
+rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm,varray_scenariowise_idm = multiscenarios_idm(mergetype="lower",modelmaker=make_IDM_models);
+rmse_pos_mat_cidm,rmse_vel_mat_cidm,coll_mat_cidm,varray_scenariowise_cidm = multiscenarios_idm(mergetype="lower",modelmaker=make_cidm_models);
+rmse_pos_mat_pf,rmse_vel_mat_pf,coll_mat_pf,varray_scenariowise_pf = multiscenarios_pf(mergetype="upper");
+rmse_pos_mat_lmidm, rmse_vel_mat_lmidm, coll_mat_lmidm,varray_scenariowise_lmidm = multiscenarios_lmidm(mergetype="upper");
 
-v_hist_idm = vhist_scenariowise_idm[1];
-v_hist_cidm = vhist_scenariowise_cidm[1];
-v_hist_pf = vhist_scenariowise_pf[1];
-v_hist_lmidm = vhist_scenariowise_lmidm[1];
+# The StatsPlots way
+d = density(
+    [vel_array_true,varray_scenariowise_idm[1],varray_scenariowise_cidm[1],
+    varray_scenariowise_pf[1],varray_scenariowise_lmidm[1]],
+    labels=["true","idm","cidm","pf","lmidm"]
+)
 
-a = PGFPlots.Axis([veh_hist_true,v_hist_idm,v_hist_cidm,v_hist_lmidm,v_hist_pf,
+StatsPlots.savefig(d,"media/density.svg")
+
+# Earlier way that would make histogram bars
+vel_hist_true = PGFPlots.Plots.Histogram(vel_array_true,bins=10,density=true)
+v_hist_idm = speed_histogram(varray_scenariowise_idm[1]);
+v_hist_cidm = speed_histogram(varray_scenariowise_cidm[1]);
+v_hist_pf = speed_histogram(varray_scenariowise_pf[1]);
+v_hist_lmidm = speed_histogram(varray_scenariowise_lmidm[1]);
+
+a = PGFPlots.Axis([vel_hist_true,v_hist_idm,v_hist_cidm,v_hist_lmidm,v_hist_pf,
 Plots.Command(raw"legend{true,idm,cidm,lmidm,pf}") # Need backslash before legend
 ])
 ```
@@ -52,7 +68,15 @@ function vel_distribution(list_of_scenes;id_list=[])
             push!(vel_array,vel)
         end
     end
-    h = PGFPlots.Plots.Histogram(Float64.(vel_array),bins=10)
+    #h = PGFPlots.Plots.Histogram(Float64.(vel_array),bins=10)
+    return Float64.(vel_array)
+end
+
+"""
+- Make a histogram from speed data
+"""
+function speed_histogram(speed_array)
+    return PGFPlots.Plots.Histogram(speed_array,bins=20,density=true)
 end
 
 """
@@ -104,9 +128,9 @@ modelmaker=make_cidm_models)
     rmse_pos = rmse_dict2mean(rmse_pos_dict)
     rmse_vel = rmse_dict2mean(rmse_vel_dict)
 
-    vel_hist = vel_distribution(scene_list)
+    vel_array = vel_distribution(scene_list)
 
-    return rmse_pos,rmse_vel,c_array,vel_hist
+    return rmse_pos,rmse_vel,c_array,vel_array
 end
 
 """
@@ -140,22 +164,22 @@ function multiscenarios_idm(;mergetype="upper",modelmaker=make_cidm_models)
     rmse_pos_scenariowise = []
     rmse_vel_scenariowise = []
     coll_scenariowise = []
-    vhist_scenariowise = []
+    varray_scenariowise = []
 
     for i in 1:num_scenarios
         print("scenario number = $i\n")
-        rmse_pos,rmse_vel,coll_array,vhist = metrics_from_jld_idmbased(f,
+        rmse_pos,rmse_vel,coll_array,varray = metrics_from_jld_idmbased(f,
             filename="media/$(prefix)_$i.jld",modelmaker=modelmaker)
         push!(rmse_pos_scenariowise,rmse_pos)
         push!(rmse_vel_scenariowise,rmse_vel)
         push!(coll_scenariowise,coll_array)
-        push!(vhist_scenariowise,vhist)
+        push!(varray_scenariowise,varray)
     end
 
     rmse_pos_matrix = truncate_vecs(rmse_pos_scenariowise)
     rmse_vel_matrix = truncate_vecs(rmse_vel_scenariowise)
     coll_matrix = truncate_vecs(coll_scenariowise)
-    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,vhist_scenariowise
+    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,varray_scenariowise
 end
 
 """
@@ -192,9 +216,9 @@ function metrics_from_jld(f::FilteringEnvironment;filename="1.jld")
     rmse_pos = rmse_dict2mean(rmse_pos_dict)
     rmse_vel = rmse_dict2mean(rmse_vel_dict)
 
-    vel_hist = vel_distribution(scene_list)
+    vel_array = vel_distribution(scene_list)
 
-    return rmse_pos,rmse_vel,c_array,vel_hist
+    return rmse_pos,rmse_vel,c_array,vel_array
 end
 
 """
@@ -225,23 +249,23 @@ function multiscenarios_pf(;mergetype = "upper")
     rmse_pos_scenariowise = []
     rmse_vel_scenariowise = []
     coll_scenariowise = []
-    vhist_scenariowise = []
+    varray_scenariowise = []
 
     for i in 1:num_scenarios
         print("i=$i\n")
         print("filename = media/$(prefix)_$i.jld\n")
-        rmse_pos,rmse_vel,coll_array,vhist = metrics_from_jld(f,
+        rmse_pos,rmse_vel,coll_array,varray = metrics_from_jld(f,
         filename="media/$(prefix)_$i.jld")
         push!(rmse_pos_scenariowise,rmse_pos)
         push!(rmse_vel_scenariowise,rmse_vel)
         push!(coll_scenariowise,coll_array)
-        push!(vhist_scenariowise,vhist)
+        push!(varray_scenariowise,varray)
     end
 
     rmse_pos_matrix = truncate_vecs(rmse_pos_scenariowise)
     rmse_vel_matrix = truncate_vecs(rmse_vel_scenariowise)
     coll_matrix = truncate_vecs(coll_scenariowise)
-    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,vhist_scenariowise
+    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,varray_scenariowise
 end
 
 #***************collision and rmse compare***********************
