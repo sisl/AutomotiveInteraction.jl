@@ -107,10 +107,14 @@ include("Filtering/lmidm.jl")
 export
     vel_distribution,
     speed_histogram,
+    pos_data,
     multiscenarios_idm,
     multiscenarios_pf,
     coll_barchart,
-    rmse_plots_modelscompare
+    rmse_plots_modelscompare,
+    scenelist_from_jld_idmbased,
+    scenelist_from_jld_pf,
+    scenelist_from_jld_lmidm
 include("Filtering/metrics.jl")
 
 end # End module

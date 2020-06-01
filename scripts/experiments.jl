@@ -70,7 +70,6 @@ for i in 1:length(s)
                         scenario_name=name,scenario_number=i);
 end
 
-
 #************Docstring example code from multiscenarios_pf in helpers.jl*****
 # USEFUL to keep around for making tikz plots later on by rerunning this script
 # Select a block of code and press shift+enter to run block selectively
@@ -128,6 +127,68 @@ PGFPlots.save("media/vhist_idm.svg",aidm)
 PGFPlots.save("media/vhist_cidm.svg",acidm)
 PGFPlots.save("media/vhist_lmidm.svg",almidm)
 PGFPlots.save("media/vhist_pf.svg",apf)
+
+#*******************Histogram2 plot for position trace****
+# Get the true position tracks for all upper scenarios and make histogram2
+cd("scripts");
+f = FilteringEnvironment();
+
+pos_x_master = Float64[];pos_y_master = Float64[];
+pos_x_master_idm = Float64[];pos_y_master_idm = Float64[];
+pos_x_master_cidm = Float64[];pos_y_master_cidm = Float64[];
+pos_x_master_lmidm = Float64[];pos_y_master_lmidm = Float64[];
+pos_x_master_pf = Float64[];pos_y_master_pf = Float64[];
+
+for i in 1:10
+    filename = "media/upper_$i.jld"
+    
+    # Get position data for replay
+    id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te")
+    scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+    pos_x_array,pos_y_array = pos_data(scenelist,id_list=id_list)
+    append!(pos_x_master,pos_x_array)
+    append!(pos_y_master,pos_y_array)
+
+    # Get position data for idm
+    scenelist_idm = scenelist_from_jld_idmbased(f,filename=filename,modelmaker=make_IDM_models)
+    pos_x_array_idm,pos_y_array_idm = pos_data(scenelist_idm,id_list=id_list)
+    append!(pos_x_master_idm,pos_x_array_idm)
+    append!(pos_y_master_idm,pos_y_array_idm)
+
+    # Get position data for cidm
+    scenelist_cidm = scenelist_from_jld_idmbased(f,filename=filename,modelmaker=make_cidm_models)
+    pos_x_array_cidm,pos_y_array_cidm = pos_data(scenelist_cidm,id_list=id_list)
+    append!(pos_x_master_cidm,pos_x_array_cidm)
+    append!(pos_y_master_cidm,pos_y_array_cidm)
+
+    # Get position data for lmidm
+    scenelist_lmidm = scenelist_from_jld_lmidm(f,scenario_name="upper",scenario_number=i)
+    pos_x_array_lmidm,pos_y_array_lmidm = pos_data(scenelist_lmidm,id_list=id_list)
+    append!(pos_x_master_lmidm,pos_x_array_lmidm)
+    append!(pos_y_master_lmidm,pos_y_array_lmidm)
+
+    # Get position data for pf
+    scenelist_pf = scenelist_from_jld_pf(f,filename=filename)
+    pos_x_array_pf,pos_y_array_pf = pos_data(scenelist_pf,id_list=id_list)
+    append!(pos_x_master_pf,pos_x_array_pf)
+    append!(pos_y_master_pf,pos_y_array_pf)
+
+end
+
+p = PGFPlots.Plots.Histogram2(pos_x_master,pos_y_master,zmode="log");
+PGFPlots.save("poshisttrue.svg",p) # Note that media/ is not part of the filename
+
+p_idm = PGFPlots.Plots.Histogram2(pos_x_master_idm,pos_y_master_idm,zmode="log");
+PGFPlots.save("poshistidm.svg",p_idm)
+
+p_cidm = PGFPlots.Plots.Histogram2(pos_x_master_cidm,pos_y_master_cidm,zmode="log");
+PGFPlots.save("poshistcidm.svg",p_cidm)
+
+p_lmidm = PGFPlots.Plots.Histogram2(pos_x_master_lmidm,pos_y_master_lmidm,zmode="log");
+PGFPlots.save("poshistlmidm.svg",p_lmidm)
+
+p_pf = PGFPlots.Plots.Histogram2(pos_x_master_pf,pos_y_master_pf,zmode="log");
+PGFPlots.save("poshistpf.svg",p_pf)
 
 #********************Train upper test lower******************
 # We need to show a variability in the generated scenarios

@@ -8,6 +8,7 @@ Run by navigating REPL to scripts folder
 
 # List of Functions
 - `vel_distribution`
+- `pos_data`
 - `metrics_from_jld_idmbased`
 - `multiscenarios_idm`
 - `metrics_from_jld`
@@ -32,17 +33,18 @@ f = FilteringEnvironment();
 id_list,ts,te=JLD.load("media/upper_1.jld","veh_id_list","ts","te");
 scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te);
 vel_array_true = vel_distribution(scenelist);
+posx_array_true,posy_array_true = pos_data(scenelist,id_list=id_list);
 
-rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm,varray_scenariowise_idm = multiscenarios_idm(mergetype="lower",modelmaker=make_IDM_models);
-rmse_pos_mat_cidm,rmse_vel_mat_cidm,coll_mat_cidm,varray_scenariowise_cidm = multiscenarios_idm(mergetype="lower",modelmaker=make_cidm_models);
-rmse_pos_mat_pf,rmse_vel_mat_pf,coll_mat_pf,varray_scenariowise_pf = multiscenarios_pf(mergetype="upper");
-rmse_pos_mat_lmidm, rmse_vel_mat_lmidm, coll_mat_lmidm,varray_scenariowise_lmidm = multiscenarios_lmidm(mergetype="upper");
+rmse_pos_mat_idm,rmse_vel_mat_idm,coll_mat_idm,varray_scenariowise_idm,x_array_scenariowise_idm,y_array_scenariowise_idm = multiscenarios_idm(mergetype="lower",modelmaker=make_IDM_models);
+rmse_pos_mat_cidm,rmse_vel_mat_cidm,coll_mat_cidm,varray_scenariowise_cidm,x_array_scenariowise_cidm,y_array_scenariowise_cidm = multiscenarios_idm(mergetype="lower",modelmaker=make_cidm_models);
+rmse_pos_mat_pf,rmse_vel_mat_pf,coll_mat_pf,varray_scenariowise_pf,x_array_scenariowise_pf,y_array_scenariowise_pf = multiscenarios_pf(mergetype="upper");
+rmse_pos_mat_lmidm, rmse_vel_mat_lmidm, coll_mat_lmidm,varray_scenariowise_lmidm,x_array_scenariowise_lmidm,y_array_scenariowise_lmidm = multiscenarios_lmidm(mergetype="upper");
 
-# The StatsPlots way
+# The StatsPlots way for speed distribution density line plot
 d = density(
     [vel_array_true,varray_scenariowise_idm[1],varray_scenariowise_cidm[1],
     varray_scenariowise_pf[1],varray_scenariowise_lmidm[1]],
-    labels=["true","idm","cidm","pf","lmidm"]
+    labels=["True","Idm","C-IDM","PF","LM-IDM"]
 )
 
 StatsPlots.savefig(d,"media/density.svg")
@@ -77,6 +79,29 @@ end
 """
 function speed_histogram(speed_array)
     return PGFPlots.Plots.Histogram(speed_array,bins=20,density=true)
+end
+
+"""
+function pos_data(list_of_scenes;id_list=[])
+- Get the x and y locations of all the cars in `id_list` over `list_of_scenes`
+
+# Example
+```julia
+# See experiments.jl
+```
+"""
+function pos_data(list_of_scenes;id_list=[])
+    x_array = []
+    y_array = []
+    for scene in list_of_scenes
+        if !isempty(id_list) keep_vehicle_subset!(scene,id_list) end
+        for veh in scene
+            push!(x_array,veh.state.posG.x)
+            push!(y_array,veh.state.posG.y)
+        end
+    end
+    #h = PGFPlots.Plots.Histogram(Float64.(vel_array),bins=10)
+    return Float64.(x_array), Float64.(y_array)
 end
 
 """
@@ -129,8 +154,9 @@ modelmaker=make_cidm_models)
     rmse_vel = rmse_dict2mean(rmse_vel_dict)
 
     vel_array = vel_distribution(scene_list)
+    x_array,y_array = pos_data(scene_list)
 
-    return rmse_pos,rmse_vel,c_array,vel_array
+    return rmse_pos,rmse_vel,c_array,vel_array,x_array,y_array
 end
 
 """
@@ -165,21 +191,26 @@ function multiscenarios_idm(;mergetype="upper",modelmaker=make_cidm_models)
     rmse_vel_scenariowise = []
     coll_scenariowise = []
     varray_scenariowise = []
+    x_array_scenariowise = []
+    y_array_scenariowise = []
 
     for i in 1:num_scenarios
         print("scenario number = $i\n")
-        rmse_pos,rmse_vel,coll_array,varray = metrics_from_jld_idmbased(f,
+        rmse_pos,rmse_vel,coll_array,varray,x_array,y_array = metrics_from_jld_idmbased(f,
             filename="media/$(prefix)_$i.jld",modelmaker=modelmaker)
         push!(rmse_pos_scenariowise,rmse_pos)
         push!(rmse_vel_scenariowise,rmse_vel)
         push!(coll_scenariowise,coll_array)
         push!(varray_scenariowise,varray)
+        push!(x_array_scenariowise,x_array)
+        push!(y_array_scenariowise,y_array)
     end
 
     rmse_pos_matrix = truncate_vecs(rmse_pos_scenariowise)
     rmse_vel_matrix = truncate_vecs(rmse_vel_scenariowise)
     coll_matrix = truncate_vecs(coll_scenariowise)
-    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,varray_scenariowise
+    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,
+    varray_scenariowise,x_array_scenariowise,y_array_scenariowise
 end
 
 """
@@ -218,7 +249,9 @@ function metrics_from_jld(f::FilteringEnvironment;filename="1.jld")
 
     vel_array = vel_distribution(scene_list)
 
-    return rmse_pos,rmse_vel,c_array,vel_array
+    x_array,y_array = pos_data(scene_list)
+
+    return rmse_pos,rmse_vel,c_array,vel_array,x_array,y_array
 end
 
 """
@@ -250,22 +283,27 @@ function multiscenarios_pf(;mergetype = "upper")
     rmse_vel_scenariowise = []
     coll_scenariowise = []
     varray_scenariowise = []
+    x_array_scenariowise = []
+    y_array_scenariowise = []
 
     for i in 1:num_scenarios
         print("i=$i\n")
         print("filename = media/$(prefix)_$i.jld\n")
-        rmse_pos,rmse_vel,coll_array,varray = metrics_from_jld(f,
+        rmse_pos,rmse_vel,coll_array,varray,x_array,y_array = metrics_from_jld(f,
         filename="media/$(prefix)_$i.jld")
         push!(rmse_pos_scenariowise,rmse_pos)
         push!(rmse_vel_scenariowise,rmse_vel)
         push!(coll_scenariowise,coll_array)
         push!(varray_scenariowise,varray)
+        push!(x_array_scenariowise,x_array)
+        push!(y_array_scenariowise,y_array)
     end
 
     rmse_pos_matrix = truncate_vecs(rmse_pos_scenariowise)
     rmse_vel_matrix = truncate_vecs(rmse_vel_scenariowise)
     coll_matrix = truncate_vecs(coll_scenariowise)
-    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,varray_scenariowise
+    return rmse_pos_matrix,rmse_vel_matrix,coll_matrix,
+    varray_scenariowise,x_array_scenariowise,y_array_scenariowise
 end
 
 #***************collision and rmse compare***********************
@@ -347,4 +385,70 @@ function rmse_plots_modelscompare(rmse_mat_list;filename="media/test_rmse.pdf")
         PGFPlots.save(filename,ax)
         print("function rmse_plots_modelscompare says: saved $(filename)\n")
         return nothing
+end
+
+#********************Get scene lists********************************
+"""
+# Example
+```julia
+# See experiments.jl
+```
+"""
+function scenelist_from_jld_idmbased(f::FilteringEnvironment;filename="1.jld",
+    modelmaker=make_cidm_models)
+        #print("idm based: extract veh_id_list and ts, te from $(filename) \n")
+        # Load scenario information from jld file
+        id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te")
+        
+        scene_real = deepcopy(f.traj[ts])
+        if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
+    
+        models = modelmaker(f,scene_real)
+    
+        nticks = te-ts+1
+        scene_list = simulate(scene_real,f.roadway,models,nticks,f.timestep)
+
+    return scene_list
+end
+
+"""
+# Example
+```julia
+# See experiments.jl
+```
+"""
+function scenelist_from_jld_pf(f::FilteringEnvironment;filename="1.jld")
+    #print("Metrics extraction from jld file $(filename) \n")
+    # Load scenario information from jld file
+    models,id_list,ts,te = JLD.load(filename,"m","veh_id_list","ts","te")
+    
+    scene_real = deepcopy(f.traj[ts])
+    if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
+
+    nticks = te-ts+1
+    scene_list = simulate(scene_real,f.roadway,models,nticks,f.timestep)
+    return scene_list
+end
+
+"""
+# Example
+```julia
+# See experiments.jl
+```
+"""
+function scenelist_from_jld_lmidm(f::FilteringEnvironment;scenario_name="upper",scenario_number=1)
+    filename = "media/$(scenario_name)_$(scenario_number).jld"
+    print("lmidm metrics: extract veh_id_list and ts, te from $(filename) \n")
+    # Load scenario information from jld file
+    id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te")
+    
+    scene_real = deepcopy(f.traj[ts])
+    if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
+
+    models = make_lmfit_idm_models(f,scene_real,
+    scenario_name=scenario_name,scenario_number=scenario_number)
+
+    nticks = te-ts+1
+    scene_list = simulate(scene_real,f.roadway,models,nticks,f.timestep)
+    return scene_list
 end
