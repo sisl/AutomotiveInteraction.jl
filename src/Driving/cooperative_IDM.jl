@@ -66,28 +66,37 @@ function AutomotiveSimulator.observe!(model::CooperativeIDM, scene::Scene, roadw
 
     observe!(model.idm,scene,roadway,egoid)
     a_idm = model.idm.a
-    model.a_idm = a_idm 
+    model.a_idm = a_idm
+
+    if ego.state.posG.x < 1070
+        if egoid==60 print("Beyond merge point so stop worrying\n") end
+        model.a = model.a_idm
+        return model
+    end
+
     veh = find_merge_vehicle(model.env, scene,ego)
+
     if veh == nothing
-        #println("No merge vehicle")
+        #if egoid == 60 println("obs:No merge vehicle\n") end
         model.a = model.a_idm
     else
-        #print("Ahaaa: There is a merge veh bros. merge veh id =$(veh.id)\n")
+        #if egoid==60 print("obs:merge veh id = $(veh.id)\n") end
         model.other_acc = 0.0
         model.a = 0.0
-        model.a
+
         ego_ttm = time_to_merge(model.env, ego, model.a)
         veh_ttm = time_to_merge(model.env, veh, model.other_acc)
         model.ego_ttm = ego_ttm
         model.veh_ttm = veh_ttm
         if ( ego_ttm < 0.0 || ego_ttm < veh_ttm || veh_ttm == Inf)
-            #print("Ego TTM < Merge TTM, ignoring\n")
+            #if egoid == 60 print("obs:Ego TTM < Merge TTM, ignoring\n") end
             ego_ttm < veh_ttm
             model.a = model.a_idm
             model.consider_merge = false
             model.front_car = false
         else
-            model.consider_merge = true 
+            model.consider_merge = true
+            #if(egoid==60) print("obs:Ego TTM>Merge TTM, can't ignore \n") end
             if veh_ttm < model.c*ego_ttm 
                 model.front_car = true
                 headway = distance_projection(model.env, veh) - distance_projection(model.env, ego)
@@ -112,9 +121,11 @@ Base.rand(rng::AbstractRNG,model::CooperativeIDM) = LaneFollowingAccel(model.a)
 
 
 function find_merge_vehicle(env,scene::Scene,ego_veh)
+    egoid = ego_veh.id
     ego_lane = get_lane(env.roadway,ego_veh)
     ego_lane_tag = ego_lane.tag # Let's use tag as I think it'll be faster to compare equality than entire lane
     ego_ttm = time_to_merge(env,ego_veh,0.)
+    if egoid==60 print("fmv:ego_ttm = $(ego_ttm)\n") end
     
     # Based on upper vs lower environment, decide the specific lanes to use
     merge_lane_tag = LaneTag(0,0)
@@ -124,23 +135,20 @@ function find_merge_vehicle(env,scene::Scene,ego_veh)
         merge_lane_tag = main_lane_tag(env)
     end
 
-
-    # merge_lane_tag = LaneTag(0,0)
-    #     # Depending on the ego vehicle lane, decide whether merge lane is a or b1
-    # if ego_lane_tag == LaneTag(1,1) # Check if ego veh is on lane a
-    #     merge_lane_tag = LaneTag(1,2)
-    # elseif ego_lane_tag == LaneTag(1,2)
-    #     merge_lane_tag = LaneTag(1,1)
-    # end
+    #if egoid==60 print("ego lane tag = $(ego_lane_tag), mergetag = $(merge_lane_tag)\n") end
 
     diff_ttm = 10000
     merge_veh = nothing
     for veh in scene
         lane = get_lane(env.roadway,veh)
+        
         if lane.tag == merge_lane_tag
+            
             veh_ttm = time_to_merge(env,veh,0.)
+            
+            #if egoid==60 print("fmv: oth_veh_id=$(veh.id),veh_ttm=$(veh_ttm)\n") end
             diff_ttm_temp = abs(veh_ttm-ego_ttm)
-            #print("merger vehicle id = $(veh.id)\n")
+            
             if diff_ttm_temp < diff_ttm
                 diff_ttm = diff_ttm_temp
                 merge_veh = veh
@@ -150,44 +158,24 @@ function find_merge_vehicle(env,scene::Scene,ego_veh)
     return merge_veh
 end
 
-
-"""
-    findfirst_lane(scene::Scene, lane::Lane)
-find the first vehicle on the lane (in terms of longitudinal position)
-"""
-function findfirst_lane(scene::Scene, lane::Lane)
-    s_min = Inf
-    vehmin = nothing
-    vehind = nothing 
-    for (i, veh) in enumerate(scene)
-        if veh.state.posF.roadind.tag == lane.tag && veh.state.posF.s < s_min
-            s_min = veh.state.posF.s
-            vehmin = veh
-            vehind = i
-        end
-    end
-    return vehmin, vehind
-end
-
-"""
-    function get_end(lane::Lane)
-- Gets the distance along lane of the last curve point on the lane
-"""
-function get_end(lane::Lane)
-    return lane.curve[end].s
-end
-
 """
     time_to_merge(env::MergingEnvironment, veh::Vehicle, a::Float64 = 0.0)
 return the time to reach the merge point using constant acceleration prediction. 
 If the acceleration, `a` is not specified, it performs a constant velocity prediction.
 """
 function time_to_merge(env, veh::Entity, a::Float64 = 0.0)
+    egoid = veh.id
     d = -dist_to_merge(env, veh)
     v = veh.state.v
     t = Inf
-    if isapprox(a, 0) 
-        t =  d/veh.state.v 
+    if isapprox(a, 0)
+        if v>0.1
+             if egoid==60 print("ttm::d=$d,v=$v\n") end
+             t =  d/v
+        else
+             if egoid==60 print("ttm::d=$d,v=$v\n") end
+             t = d/0.1
+        end
     else
         delta = v^2 + 2.0*a*d
         if delta < 0.0
@@ -224,4 +212,37 @@ function distance_projection(env, veh::Entity)
         dm = -dist_to_merge(env, veh)
         return env.roadway[env.merge_index].s - dm
     end
+end
+
+"""
+    findfirst_lane(scene::Scene, lane::Lane)
+find the first vehicle on the lane (in terms of longitudinal position)
+"""
+function findfirst_lane(scene::Scene, lane::Lane)
+    s_min = Inf
+    vehmin = nothing
+    vehind = nothing 
+    for (i, veh) in enumerate(scene)
+        if veh.state.posF.roadind.tag == lane.tag && veh.state.posF.s < s_min
+            s_min = veh.state.posF.s
+            vehmin = veh
+            vehind = i
+        end
+    end
+    return vehmin, vehind
+end
+
+    # merge_lane_tag = LaneTag(0,0)
+    #     # Depending on the ego vehicle lane, decide whether merge lane is a or b1
+    # if ego_lane_tag == LaneTag(1,1) # Check if ego veh is on lane a
+    #     merge_lane_tag = LaneTag(1,2)
+    # elseif ego_lane_tag == LaneTag(1,2)
+    #     merge_lane_tag = LaneTag(1,1)
+    # end
+"""
+function get_end(lane::Lane)
+- Gets the distance along lane of the last curve point on the lane
+"""
+function get_end(lane::Lane)
+    return lane.curve[end].s
 end

@@ -105,7 +105,9 @@ coll_mat_list = [coll_mat_idm,coll_mat_cidm,coll_mat_lmidm,coll_mat_pf];
 coll_barchart(coll_mat_list,filename = "media/coll_barchart_upper.svg");
 
 
-#***********Histogram plot****************
+#***********
+# Histogram plot
+#****************
 # Full example in docstring of Filtering/metrics.jl vel_distribution
 a = PGFPlots.Axis([veh_hist_true,v_hist_idm,v_hist_cidm,v_hist_lmidm,v_hist_pf,
 Plots.Command(raw"\legend{true,idm,cidm,lmidm,pf}")
@@ -128,7 +130,9 @@ PGFPlots.save("media/vhist_cidm.svg",acidm)
 PGFPlots.save("media/vhist_lmidm.svg",almidm)
 PGFPlots.save("media/vhist_pf.svg",apf)
 
-#*******************Histogram2 plot for position trace****
+#*******************
+# Histogram2 plot for position trace
+#****
 # Get the true position tracks for all upper scenarios and make histogram2
 cd("scripts");
 f = FilteringEnvironment();
@@ -189,6 +193,68 @@ PGFPlots.save("poshistlmidm.svg",p_lmidm)
 
 p_pf = PGFPlots.Plots.Histogram2(pos_x_master_pf,pos_y_master_pf,zmode="log");
 PGFPlots.save("poshistpf.svg",p_pf)
+
+#********************
+# Speed histogram
+#***************************
+v_array = Float64[]; v_array_idm = Float64[]; v_array_cidm = Float64[];
+v_array_lmidm = Float64[];v_array_pf = Float64[];
+scenario_num = 10
+for i in 5:7
+        filename = "media/upper_$i.jld"
+        
+        # replay
+        id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te")
+        scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+        append!(v_array,vel_distribution(scenelist))
+
+        # idm
+        scenelist_idm = scenelist_from_jld_idmbased(f,filename=filename,modelmaker=make_IDM_models)
+        append!(v_array_idm,vel_distribution(scenelist_idm))
+
+        # cidm
+        scenelist_cidm = scenelist_from_jld_idmbased(f,filename=filename,modelmaker=make_cidm_models)
+        append!(v_array_cidm,vel_distribution(scenelist_cidm))
+
+        # lmidm
+        scenelist_lmidm = scenelist_from_jld_lmidm(f,scenario_name="upper",scenario_number=i)
+        append!(v_array_lmidm, vel_distribution(scenelist_lmidm))
+
+        # pf
+        scenelist_pf = scenelist_from_jld_pf(f,filename=filename)
+        append!(v_array_pf,vel_distribution(scenelist_pf))
+end
+
+d = density([v_array,v_array_idm,v_array_cidm,v_array_lmidm,v_array_pf],
+    labels=["True","Idm","C-IDM","LM-IDM","PF"]);
+
+StatsPlots.savefig(d,"media/speed_hist/density_567.svg")
+
+
+#******************************
+# Make videos from scenelists
+#******************************
+f = FilteringEnvironment()
+num = 3;
+prefix = "upper";
+ext = "mp4";
+filename = "media/$(prefix)_$(num).jld";
+scenelist_pf = scenelist_from_jld_pf(f,filename=filename);
+scenelist2video(f,scenelist_pf,filename="media/turing/$(prefix)_$(num)_pf.$(ext)");
+
+id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te");
+scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te);
+scenelist2video(f,scenelist,filename="media/turing/$(prefix)_$(num)_replay.$(ext)");
+
+#****************Extract moments from scalar array of speeds*******************
+function speed_dist_moments(v_array,v_array_idm,v_array_cidm,v_array_lmidm,v_array_pf)
+        mu,sig = StatsBase.mean_and_std(v_array)
+        mu_idm,sig_idm = StatsBase.mean_and_std(v_array_idm)
+        mu_cidm,sig_cidm = StatsBase.mean_and_std(v_array_cidm)
+        mu_lmidm,sig_lmidm = StatsBase.mean_and_std(v_array_lmidm)
+        mu_pf,sig_pf = StatsBase.mean_and_std(v_array_pf)
+    
+    end
 
 #********************Train upper test lower******************
 # We need to show a variability in the generated scenarios
