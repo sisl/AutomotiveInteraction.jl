@@ -16,6 +16,29 @@ using AutomotiveInteraction
 using DelimitedFiles # to write to txt file that will be read in by python
 
 """
+
+# Example
+```julia
+models,id_list,ts,te = JLD.load("media/upper_1.jld","m","veh_id_list","ts","te");
+models[19].c = 0.9
+models[6].c = 0.8
+te=te+20
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_1_pf_new.mp4");
+```
+"""
+function scenelist_from_jld_pf_debug(f::FilteringEnvironment,models,id_list,ts,te)
+    #print("Metrics extraction from jld file $(filename) \n")
+    
+    scene_real = deepcopy(f.traj[ts])
+    if !isempty(id_list) keep_vehicle_subset!(scene_real,id_list) end
+
+    nticks = te-ts+1
+    scene_list = simulate(scene_real,f.roadway,models,nticks,f.timestep)
+    return scene_list
+end
+
+"""
 - Make scatter plot of the lmidm parameters and final particle for a scenario
 with each scatter point corresponding to a different car
 

@@ -69,7 +69,7 @@ function AutomotiveSimulator.observe!(model::CooperativeIDM, scene::Scene, roadw
     model.a_idm = a_idm
 
     if ego.state.posG.x < 1070
-        if egoid==60 print("Beyond merge point so stop worrying\n") end
+        if egoid==194 print("Beyond merge point so stop worrying\n") end
         model.a = model.a_idm
         return model
     end
@@ -77,10 +77,10 @@ function AutomotiveSimulator.observe!(model::CooperativeIDM, scene::Scene, roadw
     veh = find_merge_vehicle(model.env, scene,ego)
 
     if veh == nothing
-        #if egoid == 60 println("obs:No merge vehicle\n") end
+        #if egoid == 194 print("obs:No merge vehicle\n") end
         model.a = model.a_idm
     else
-        #if egoid==60 print("obs:merge veh id = $(veh.id)\n") end
+        #if egoid==194 print("obs:merge veh id = $(veh.id)\n") end
         model.other_acc = 0.0
         model.a = 0.0
 
@@ -89,31 +89,38 @@ function AutomotiveSimulator.observe!(model::CooperativeIDM, scene::Scene, roadw
         model.ego_ttm = ego_ttm
         model.veh_ttm = veh_ttm
         if ( ego_ttm < 0.0 || ego_ttm < veh_ttm || veh_ttm == Inf)
-            #if egoid == 60 print("obs:Ego TTM < Merge TTM, ignoring\n") end
+            #if egoid == 194 print("obs:Ego TTM < Merge TTM, ignoring\n") end
             ego_ttm < veh_ttm
             model.a = model.a_idm
             model.consider_merge = false
             model.front_car = false
         else
             model.consider_merge = true
-            #if(egoid==60) print("obs:Ego TTM>Merge TTM, can't ignore \n") end
-            if veh_ttm < model.c*ego_ttm 
+            #if(egoid==194) print("obs:Ego TTM>Merge TTM, can't ignore \n") end
+            #if(egoid==249) print("obs:c = $(model.c)\n") end
+            #model.c = 0.1 # For upper_4
+            #model.c = 0.1 # For upper 2
+            if veh_ttm < model.c*ego_ttm
+                if(egoid==194) print("obs: Cannot ignore as less than c times\n") end
                 model.front_car = true
                 headway = distance_projection(model.env, veh) - distance_projection(model.env, ego)
-                headway -= veh.def.length 
+                #headway -= veh.def.length
+                if egoid==194 print("obs: headway = $headway \n") end
                 v_oth = veh.state.v
                 v_ego = ego.state.v
-                # @show "tracking front car"
+                if egoid==194 print("obs: v_ego = $v_ego\n") end
+                if egoid==194 print("obs: v_oth = $v_oth\n") end
                 track_longitudinal!(model.idm, v_ego, v_oth, headway)
                 model.a_merge = model.idm.a
                 model.a = min(model.a_merge, model.a_idm)
-            else 
+            else
+                if(egoid==194) print("obs:Ignore as not less than c times\n") end
                 model.a = model.a_idm 
                 model.front_car = false
             end
         end
     end
-    #print("cidm observe says: I'm done observing\n")
+    if egoid==194 print("model.a = $(model.a)\n") end
     return model
 end
 
@@ -125,7 +132,7 @@ function find_merge_vehicle(env,scene::Scene,ego_veh)
     ego_lane = get_lane(env.roadway,ego_veh)
     ego_lane_tag = ego_lane.tag # Let's use tag as I think it'll be faster to compare equality than entire lane
     ego_ttm = time_to_merge(env,ego_veh,0.)
-    if egoid==60 print("fmv:ego_ttm = $(ego_ttm)\n") end
+    #if egoid==60 print("fmv:ego_ttm = $(ego_ttm)\n") end
     
     # Based on upper vs lower environment, decide the specific lanes to use
     merge_lane_tag = LaneTag(0,0)
@@ -146,7 +153,7 @@ function find_merge_vehicle(env,scene::Scene,ego_veh)
             
             veh_ttm = time_to_merge(env,veh,0.)
             
-            #if egoid==60 print("fmv: oth_veh_id=$(veh.id),veh_ttm=$(veh_ttm)\n") end
+            #if egoid==249 print("fmv: oth_veh_id=$(veh.id),veh_ttm=$(veh_ttm)\n") end
             diff_ttm_temp = abs(veh_ttm-ego_ttm)
             
             if diff_ttm_temp < diff_ttm
@@ -170,10 +177,10 @@ function time_to_merge(env, veh::Entity, a::Float64 = 0.0)
     t = Inf
     if isapprox(a, 0)
         if v>0.1
-             if egoid==60 print("ttm::d=$d,v=$v\n") end
+            #if egoid==249 print("ttm::d=$d,v=$v\n") end
              t =  d/v
         else
-             if egoid==60 print("ttm::d=$d,v=$v\n") end
+             #if egoid==249 print("ttm::d=$d,v=$v\n") end
              t = d/0.1
         end
     else
@@ -202,7 +209,8 @@ end
 
 """
     distance_projection(env::MergingEnvironment, veh::Vehicle)
-Performs a projection of `veh` onto the main lane. It returns the longitudinal position of the projection of `veh` on the main lane. 
+Performs a projection of `veh` onto the main lane. 
+It returns the longitudinal position of the projection of `veh` on the main lane. 
 The projection is computing by conserving the distance to the merge point.
 """
 function distance_projection(env, veh::Entity)

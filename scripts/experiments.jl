@@ -235,12 +235,14 @@ StatsPlots.savefig(d,"media/speed_hist/density_567.svg")
 # Make videos from scenelists
 #******************************
 f = FilteringEnvironment()
-num = 3;
 prefix = "upper";
 ext = "mp4";
-filename = "media/$(prefix)_$(num).jld";
-scenelist_pf = scenelist_from_jld_pf(f,filename=filename);
-scenelist2video(f,scenelist_pf,filename="media/turing/$(prefix)_$(num)_pf.$(ext)");
+
+for num in 1:1
+        filename = "media/$(prefix)_$(num).jld";
+        scenelist_pf = scenelist_from_jld_pf(f,filename=filename);
+        scenelist2video(f,scenelist_pf,filename="media/turing/$(prefix)_$(num)_pf_new2.$(ext)");
+end
 
 id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te");
 scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te);
@@ -253,11 +255,43 @@ function speed_dist_moments(v_array,v_array_idm,v_array_cidm,v_array_lmidm,v_arr
         mu_cidm,sig_cidm = StatsBase.mean_and_std(v_array_cidm)
         mu_lmidm,sig_lmidm = StatsBase.mean_and_std(v_array_lmidm)
         mu_pf,sig_pf = StatsBase.mean_and_std(v_array_pf)
-    
-    end
+end
 
-#********************Train upper test lower******************
-# We need to show a variability in the generated scenarios
-# So we need to combine the particle sets of different vehicles together
-# And then for the same set of vehicles in the lower merge i.e. test domain
-# We show significantly different driving behavior by sampling from the particle set
+#********************Cooperation params for Turing test******************
+models,id_list,ts,te = JLD.load("media/upper_1.jld","m","veh_id_list","ts","te");
+models[19].c = 0.9
+models[6].c = 0.8
+#models[19].idm.d_max=6.0
+#models[29].idm.d_max=4.0
+te=te+20
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_1_pf_turing.mp4");
+
+models,id_list,ts,te = JLD.load("media/upper_5.jld","m","veh_id_list","ts","te");
+models[194].c = 0.7
+models[193].idm.d_max=2.5
+te=te+30
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_5_pf_turing.mp4");
+
+models,id_list,ts,te = JLD.load("media/upper_6.jld","m","veh_id_list","ts","te");
+models[211].idm.d_max=6.0
+models[215].idm.d_max=6.0
+models[217].idm.d_max=2.0
+te = te+20
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_6_pf_turing.mp4");
+
+models,id_list,ts,te = JLD.load("media/upper_7.jld","m","veh_id_list","ts","te");
+models[249].c=0.2
+models[250].c=0.75
+models[250].idm.d_max=6.0
+models[249].idm.d_max=2.0
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_7_pf_turing.mp4");
+
+models,id_list,ts,te = JLD.load("media/upper_8.jld","m","veh_id_list","ts","te");
+#models[275].idm.d_max=7.0
+models[275].c = 0.4
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_8_pf_turing.mp4");
