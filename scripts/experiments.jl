@@ -258,6 +258,10 @@ function speed_dist_moments(v_array,v_array_idm,v_array_cidm,v_array_lmidm,v_arr
 end
 
 #********************Cooperation params for Turing test******************
+cd("scripts")
+f = FilteringEnvironment
+include("helpers.jl")
+
 models,id_list,ts,te = JLD.load("media/upper_1.jld","m","veh_id_list","ts","te");
 models[19].c = 0.9
 models[6].c = 0.8
@@ -291,7 +295,16 @@ scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
 scenelist2video(f,scenelist_pf,filename="media/turing/upper_7_pf_turing.mp4");
 
 models,id_list,ts,te = JLD.load("media/upper_8.jld","m","veh_id_list","ts","te");
-#models[275].idm.d_max=7.0
-models[275].c = 0.4
+models[275].idm.d_max=5.0
+models[275].c = 0.65
+models[276].idm.d_max= 5.0
+models[276].c = 0.05
+models[277].c = 0.9
 scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
 scenelist2video(f,scenelist_pf,filename="media/turing/upper_8_pf_turing.mp4");
+
+models,id_list,ts,te = JLD.load("media/upper_10.jld","m","veh_id_list","ts","te");
+models[339].idm.d_max=1.0
+models[339].c = 0.05
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_10_pf_turing.mp4");
