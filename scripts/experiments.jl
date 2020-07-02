@@ -51,6 +51,24 @@ for i in 1:length(s)
         JLD.save("media/upper_$i.jld","m",m,"p",p,"md",md,"veh_id_list",veh_id_list,"ts",ts,"te",te)
 end
 
+#*****************Generate idm params for lmfit************
+s = scenarios_upper
+f = FilteringEnvironment()
+name = "upper"
+
+for i in 1:length(s)
+        veh_id_list = s[i][1]
+        ts = s[i][2][1]
+        te = s[i][2][2]
+        filename = "media/upper_$i.jld";
+        id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te");
+        scene_list_true = replay_scenelist(f,id_list=id_list,ts=ts,te=te);
+
+        dirname = "$(name)_$(i)"
+        mkdir("lmfit/$(dirname)")
+        feat_dict = scenelist2idmfeatures(f,scene_list_true,id_list=id_list,
+                        scenario_name=name,scenario_number=i);
+end
 
 #************Docstring example code from multiscenarios_pf in helpers.jl*****
 # USEFUL to keep around for making tikz plots later on by rerunning this script
@@ -87,30 +105,206 @@ coll_mat_list = [coll_mat_idm,coll_mat_cidm,coll_mat_lmidm,coll_mat_pf];
 coll_barchart(coll_mat_list,filename = "media/coll_barchart_upper.svg");
 
 
-#********************Train upper test lower******************
-# We need to show a variability in the generated scenarios
-# So we need to combine the particle sets of different vehicles together
-# And then for the same set of vehicles in the lower merge i.e. test domain
-# We show significantly different driving behavior by sampling from the particle set
+#***********
+# Histogram plot
+#****************
+# Full example in docstring of Filtering/metrics.jl vel_distribution
+a = PGFPlots.Axis([veh_hist_true,v_hist_idm,v_hist_cidm,v_hist_lmidm,v_hist_pf,
+Plots.Command(raw"\legend{true,idm,cidm,lmidm,pf}")
+]);
+
+aidm = PGFPlots.Axis([veh_hist_true,v_hist_idm,Plots.Command(raw"\legend{true,idm}")],
+xlabel="velocity",ylabel="density",title="True vs IDM");
+
+acidm = PGFPlots.Axis([veh_hist_true,v_hist_cidm,Plots.Command(raw"\legend{true,c-idm}")],
+xlabel="velocity",ylabel="density",title="True vs C-IDM");
+
+almidm = PGFPlots.Axis([veh_hist_true,v_hist_lmidm,Plots.Command(raw"\legend{true,lm-idm}")],
+xlabel="velocity",ylabel="density",title="True vs LM-IDM");
+
+apf = PGFPlots.Axis([veh_hist_true,v_hist_pf,Plots.Command(raw"\legend{true,pf}")],
+xlabel="velocity",ylabel="density",title="True vs pf");
+
+PGFPlots.save("media/vhist_idm.svg",aidm)
+PGFPlots.save("media/vhist_cidm.svg",acidm)
+PGFPlots.save("media/vhist_lmidm.svg",almidm)
+PGFPlots.save("media/vhist_pf.svg",apf)
+
+#*******************
+# Histogram2 plot for position trace
+#****
+# Get the true position tracks for all upper scenarios and make histogram2
+cd("scripts");
+f = FilteringEnvironment();
+
+pos_x_master = Float64[];pos_y_master = Float64[];
+pos_x_master_idm = Float64[];pos_y_master_idm = Float64[];
+pos_x_master_cidm = Float64[];pos_y_master_cidm = Float64[];
+pos_x_master_lmidm = Float64[];pos_y_master_lmidm = Float64[];
+pos_x_master_pf = Float64[];pos_y_master_pf = Float64[];
+
+for i in 1:10
+    filename = "media/upper_$i.jld"
+    
+    # Get position data for replay
+    id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te")
+    scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+    pos_x_array,pos_y_array = pos_data(scenelist,id_list=id_list)
+    append!(pos_x_master,pos_x_array)
+    append!(pos_y_master,pos_y_array)
+
+    # Get position data for idm
+    scenelist_idm = scenelist_from_jld_idmbased(f,filename=filename,modelmaker=make_IDM_models)
+    pos_x_array_idm,pos_y_array_idm = pos_data(scenelist_idm,id_list=id_list)
+    append!(pos_x_master_idm,pos_x_array_idm)
+    append!(pos_y_master_idm,pos_y_array_idm)
+
+    # Get position data for cidm
+    scenelist_cidm = scenelist_from_jld_idmbased(f,filename=filename,modelmaker=make_cidm_models)
+    pos_x_array_cidm,pos_y_array_cidm = pos_data(scenelist_cidm,id_list=id_list)
+    append!(pos_x_master_cidm,pos_x_array_cidm)
+    append!(pos_y_master_cidm,pos_y_array_cidm)
+
+    # Get position data for lmidm
+    scenelist_lmidm = scenelist_from_jld_lmidm(f,scenario_name="upper",scenario_number=i)
+    pos_x_array_lmidm,pos_y_array_lmidm = pos_data(scenelist_lmidm,id_list=id_list)
+    append!(pos_x_master_lmidm,pos_x_array_lmidm)
+    append!(pos_y_master_lmidm,pos_y_array_lmidm)
+
+    # Get position data for pf
+    scenelist_pf = scenelist_from_jld_pf(f,filename=filename)
+    pos_x_array_pf,pos_y_array_pf = pos_data(scenelist_pf,id_list=id_list)
+    append!(pos_x_master_pf,pos_x_array_pf)
+    append!(pos_y_master_pf,pos_y_array_pf)
+
+end
+
+p = PGFPlots.Plots.Histogram2(pos_x_master,pos_y_master,zmode="log");
+PGFPlots.save("poshisttrue.svg",p) # Note that media/ is not part of the filename
+
+p_idm = PGFPlots.Plots.Histogram2(pos_x_master_idm,pos_y_master_idm,zmode="log");
+PGFPlots.save("poshistidm.svg",p_idm)
+
+p_cidm = PGFPlots.Plots.Histogram2(pos_x_master_cidm,pos_y_master_cidm,zmode="log");
+PGFPlots.save("poshistcidm.svg",p_cidm)
+
+p_lmidm = PGFPlots.Plots.Histogram2(pos_x_master_lmidm,pos_y_master_lmidm,zmode="log");
+PGFPlots.save("poshistlmidm.svg",p_lmidm)
+
+p_pf = PGFPlots.Plots.Histogram2(pos_x_master_pf,pos_y_master_pf,zmode="log");
+PGFPlots.save("poshistpf.svg",p_pf)
+
+#********************
+# Speed histogram
+#***************************
+v_array = Float64[]; v_array_idm = Float64[]; v_array_cidm = Float64[];
+v_array_lmidm = Float64[];v_array_pf = Float64[];
+scenario_num = 10
+for i in 5:7
+        filename = "media/upper_$i.jld"
+        
+        # replay
+        id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te")
+        scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te)
+        append!(v_array,vel_distribution(scenelist))
+
+        # idm
+        scenelist_idm = scenelist_from_jld_idmbased(f,filename=filename,modelmaker=make_IDM_models)
+        append!(v_array_idm,vel_distribution(scenelist_idm))
+
+        # cidm
+        scenelist_cidm = scenelist_from_jld_idmbased(f,filename=filename,modelmaker=make_cidm_models)
+        append!(v_array_cidm,vel_distribution(scenelist_cidm))
+
+        # lmidm
+        scenelist_lmidm = scenelist_from_jld_lmidm(f,scenario_name="upper",scenario_number=i)
+        append!(v_array_lmidm, vel_distribution(scenelist_lmidm))
+
+        # pf
+        scenelist_pf = scenelist_from_jld_pf(f,filename=filename)
+        append!(v_array_pf,vel_distribution(scenelist_pf))
+end
+
+d = density([v_array,v_array_idm,v_array_cidm,v_array_lmidm,v_array_pf],
+    labels=["True","Idm","C-IDM","LM-IDM","PF"]);
+
+StatsPlots.savefig(d,"media/speed_hist/density_567.svg")
 
 
-#************LsqFit failed experimentation***************
-# model(t, p) = p[1] * exp.(-p[2] * t)
-# tdata = range(0,stop=10,length=20)
-# ydata = model(tdata, [1.0 2.0]) + 0.01*randn(length(tdata))
-# p0 = [0.5,0.5]
-# fit = curve_fit(model, tdata, ydata, p0)
+#******************************
+# Make videos from scenelists
+#******************************
+f = FilteringEnvironment()
+prefix = "upper";
+ext = "mp4";
 
-# function test_lmfit(d,p)   
-#         print("test_lmfit called\n")
-#         print("says:d=$d\n") 
-#         t = d["t"]
-#         return p[1]*exp.(-p[2]*t)
-# end
+for num in 1:1
+        filename = "media/$(prefix)_$(num).jld";
+        scenelist_pf = scenelist_from_jld_pf(f,filename=filename);
+        scenelist2video(f,scenelist_pf,filename="media/turing/$(prefix)_$(num)_pf_new2.$(ext)");
+end
 
-# test_tdata = []
-# for t in tdata
-#         push!(test_tdata,Dict("t"=>t))
-# end
+id_list,ts,te = JLD.load(filename,"veh_id_list","ts","te");
+scenelist = replay_scenelist(f,id_list=id_list,ts=ts,te=te);
+scenelist2video(f,scenelist,filename="media/turing/$(prefix)_$(num)_replay.$(ext)");
 
-# curve_fit(test_lmfit,test_tdata,ydata,[0.5,0.5])
+#****************Extract moments from scalar array of speeds*******************
+function speed_dist_moments(v_array,v_array_idm,v_array_cidm,v_array_lmidm,v_array_pf)
+        mu,sig = StatsBase.mean_and_std(v_array)
+        mu_idm,sig_idm = StatsBase.mean_and_std(v_array_idm)
+        mu_cidm,sig_cidm = StatsBase.mean_and_std(v_array_cidm)
+        mu_lmidm,sig_lmidm = StatsBase.mean_and_std(v_array_lmidm)
+        mu_pf,sig_pf = StatsBase.mean_and_std(v_array_pf)
+end
+
+#********************Cooperation params for Turing test******************
+cd("scripts")
+f = FilteringEnvironment
+include("helpers.jl")
+
+models,id_list,ts,te = JLD.load("media/upper_1.jld","m","veh_id_list","ts","te");
+models[19].c = 0.9
+models[6].c = 0.8
+#models[19].idm.d_max=6.0
+#models[29].idm.d_max=4.0
+te=te+20
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_1_pf_turing.mp4");
+
+models,id_list,ts,te = JLD.load("media/upper_5.jld","m","veh_id_list","ts","te");
+models[194].c = 0.7
+models[193].idm.d_max=2.5
+te=te+30
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_5_pf_turing.mp4");
+
+models,id_list,ts,te = JLD.load("media/upper_6.jld","m","veh_id_list","ts","te");
+models[211].idm.d_max=6.0
+models[215].idm.d_max=6.0
+models[217].idm.d_max=2.0
+te = te+20
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_6_pf_turing.mp4");
+
+models,id_list,ts,te = JLD.load("media/upper_7.jld","m","veh_id_list","ts","te");
+models[249].c=0.2
+models[250].c=0.75
+models[250].idm.d_max=6.0
+models[249].idm.d_max=2.0
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_7_pf_turing.mp4");
+
+models,id_list,ts,te = JLD.load("media/upper_8.jld","m","veh_id_list","ts","te");
+models[275].idm.d_max=5.0
+models[275].c = 0.65
+models[276].idm.d_max= 5.0
+models[276].c = 0.05
+models[277].c = 0.9
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_8_pf_turing.mp4");
+
+models,id_list,ts,te = JLD.load("media/upper_10.jld","m","veh_id_list","ts","te");
+models[339].idm.d_max=1.0
+models[339].c = 0.05
+scenelist_pf = scenelist_from_jld_pf_debug(f,models,id_list,ts,te);
+scenelist2video(f,scenelist_pf,filename="media/turing/upper_10_pf_turing.mp4");

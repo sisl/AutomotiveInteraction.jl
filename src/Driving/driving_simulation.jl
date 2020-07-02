@@ -157,7 +157,8 @@ function make_cidm_models(f::FilteringEnvironment,scene)
     print("c-IDM models being assigned to vehicles\n")
     models = Dict{Int64,DriverModel}()
     for veh in scene
-        models[veh.id] = CooperativeIDM(env=f.mergeenv,c=1.0)
+        models[veh.id] = CooperativeIDM(env=f.mergeenv,c=1.0,
+                        idm=IntelligentDriverModel(v_des=5.))
     end
     return models
 end
